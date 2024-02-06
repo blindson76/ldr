@@ -11,45 +11,9 @@ import (
 	"golang.org/x/sys/windows"
 )
 import (
-	"encoding/binary"
 	"syscall"
-	"unicode/utf16"
 	"unsafe"
-
-	"github.com/ecks/uefi/efi/efivario"
-	"github.com/ecks/uefi/efi/efivars"
 )
-
-func readVar(c efivario.Context, name string) []byte {
-	size, err := c.GetSizeHint(name, efivars.GlobalVariable)
-	if err != nil {
-		return nil
-	}
-	out := make([]byte, size)
-	_, _, err = c.Get(name, efivars.GlobalVariable, out)
-	// log.Println(attr, sz, err, out)
-	return out
-}
-func readDesc(c efivario.Context, name string) string {
-	b := readVar(c, name)
-	// log.Println("Attrb", binary.LittleEndian.Uint32(b))
-	// log.Println("FPathLen", binary.LittleEndian.Uint16(b[4:]))
-	str := make([]uint16, len(b)/2)
-	log.Println("Len:", len(b))
-	for i := 6; i < len(b)-2; i += 2 {
-		v := binary.LittleEndian.Uint16(b[i:])
-		if v == 0 {
-			log.Println("Ofset:", i)
-
-			// str = str[:i]
-			break
-		}
-		str[i/2-3] = v
-	}
-
-	return strings.TrimSpace(string(utf16.Decode(str)))
-
-}
 
 const (
 	errnoERROR_IO_PENDING = 997
@@ -94,7 +58,7 @@ func (s *PowerCtl) Restart2() error {
 
 func (s *PowerCtl) Restart() error {
 	log.Println("Restart win")
-	cmd := exec.Command("shutdown", "/r", "/f", "/t", "1")
+	cmd := exec.Command("shutdown", "/r", "/f", "/t", "0")
 	err := cmd.Run()
 	if err != nil {
 		return err
@@ -105,7 +69,7 @@ func (s *PowerCtl) Restart() error {
 
 func (s *PowerCtl) Shutdown() error {
 	log.Println("Shutdown win")
-	cmd := exec.Command("shutdown", "/s", "/f", "/t", "1")
+	cmd := exec.Command("shutdown", "/s", "/f", "/t", "0")
 	err := cmd.Run()
 	if err != nil {
 		return err
@@ -139,7 +103,7 @@ func (s *PowerCtl) Logout() error {
 	return errors.New("logoff failed")
 }
 
-func (s *PowerCtl) Init() error {
+func (s *PowerCtl) LowInit() error {
 
 	var token windows.Token
 	tkp := windows.Tokenprivileges{}
@@ -172,7 +136,10 @@ func (s *PowerCtl) Init() error {
 	}
 	tkp.PrivilegeCount = 1
 	tkp.Privileges[0].Attributes = windows.SE_PRIVILEGE_ENABLED
-	_ = windows.AdjustTokenPrivileges(token, false, &tkp, 0, nil, nil)
+	err = windows.AdjustTokenPrivileges(token, false, &tkp, 0, nil, nil)
+	if err == nil {
+		log.Println("GOT ENVVAR privilege")
+	}
 	return nil
 }
 

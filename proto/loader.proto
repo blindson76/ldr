@@ -9,12 +9,14 @@ message Result{
 
 message PowerCtlOrder{
     PowerStatusCommand order = 1;
+    int32   param = 2;
 }
 
 enum PowerStatusCommand{
     Shutdown = 0;
     Restart = 1;
     Logoff = 2;
+    RestartTo = 3;
 }
 service Loader {
     rpc PowerCtl(PowerCtlOrder) returns (Result){}
