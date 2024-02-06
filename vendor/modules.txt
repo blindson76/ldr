@@ -1,3 +1,21 @@
+# github.com/0x5a17ed/itkit v0.6.0
+## explicit; go 1.18
+github.com/0x5a17ed/itkit
+github.com/0x5a17ed/itkit/iters/sliceit
+github.com/0x5a17ed/itkit/itlib
+github.com/0x5a17ed/itkit/ittuple
+# github.com/0x5a17ed/uefi v0.6.1
+## explicit; go 1.18
+# github.com/ecks/uefi v0.0.0-20221116212947-caef65d070eb
+## explicit; go 1.18
+github.com/ecks/uefi/efi/efiguid
+github.com/ecks/uefi/efi/efihex
+github.com/ecks/uefi/efi/efireader
+github.com/ecks/uefi/efi/efitypes
+github.com/ecks/uefi/efi/efitypes/efidevicepath
+github.com/ecks/uefi/efi/efivario
+github.com/ecks/uefi/efi/efivario/efiwindows
+github.com/ecks/uefi/efi/efivars
 # github.com/golang/protobuf v1.5.3
 ## explicit; go 1.9
 github.com/golang/protobuf/jsonpb
@@ -19,6 +37,9 @@ github.com/josharian/native
 # github.com/judwhite/go-svc v1.2.1
 ## explicit; go 1.15
 github.com/judwhite/go-svc
+# github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
+## explicit
+github.com/kardianos/osext
 # github.com/pierrec/lz4/v4 v4.1.14
 ## explicit; go 1.14
 github.com/pierrec/lz4/v4
@@ -30,10 +51,27 @@ github.com/pierrec/lz4/v4/internal/xxh32
 ## explicit; go 1.13
 github.com/pin/tftp/v3
 github.com/pin/tftp/v3/netascii
+# github.com/sevlyar/go-daemon v0.1.6
+## explicit
+github.com/sevlyar/go-daemon
+# github.com/spf13/afero v1.9.2
+## explicit; go 1.16
+github.com/spf13/afero
+github.com/spf13/afero/internal/common
+github.com/spf13/afero/mem
 # github.com/u-root/uio v0.0.0-20230220225925-ffce2a382923
 ## explicit; go 1.16
 github.com/u-root/uio/rand
 github.com/u-root/uio/uio
+# go.uber.org/atomic v1.10.0
+## explicit; go 1.18
+go.uber.org/atomic
+# go.uber.org/multierr v1.8.0
+## explicit; go 1.14
+go.uber.org/multierr
+# golang.org/x/exp v0.0.0-20221028150844-83b7d23a625f
+## explicit; go 1.18
+golang.org/x/exp/constraints
 # golang.org/x/net v0.17.0
 ## explicit; go 1.17
 golang.org/x/net/bpf
@@ -54,6 +92,7 @@ golang.org/x/sys/windows
 golang.org/x/sys/windows/svc
 # golang.org/x/text v0.13.0
 ## explicit; go 1.17
+golang.org/x/text/runes
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
