@@ -31,7 +31,8 @@ func (s *PowerCtl) Shutdown() error {
 func (s *PowerCtl) Logout() error {
 
 	log.Println("Logout")
-	cmd := exec.Command("pkill", "-SIGKILL", "-u", "user")
+	// cmd := exec.Command("pkill", "-SIGKILL", "-u", "user")
+	cmd := exec.Command("systemctl", "restart", "gdm.service")
 	err := cmd.Run()
 	if err != nil {
 		return err
