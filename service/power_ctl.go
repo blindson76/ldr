@@ -200,7 +200,9 @@ func (s *PowerCtl) RestartToOnce(target int32) error {
 
 		_, next, _ = efivars.BootNext.Get(s.efiCtx)
 		log.Println("New BootNex:", next)
-
+		if err != nil {
+			return s.Restart()
+		}
 		return err
 
 	}

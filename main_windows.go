@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"tr/com/havelsan/hloader/service"
 
 	"github.com/judwhite/go-svc"
 )
@@ -24,8 +23,7 @@ func main() {
 	defer cancel()
 
 	prg := program{
-		svr: &ServiceCtx{
-			services: []service.ServiceInterface{&service.PowerCtl{}}},
+		svr: DefaultService(),
 		ctx: ctx,
 	}
 

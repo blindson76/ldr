@@ -8,6 +8,10 @@ type ServiceCtx struct {
 	services []service.ServiceInterface
 }
 
+func DefaultService() *ServiceCtx {
+	return &ServiceCtx{
+		services: []service.ServiceInterface{&service.PowerCtl{}}}
+}
 func (s *ServiceCtx) start() {
 	for _, svc := range s.services {
 		go svc.Start()
