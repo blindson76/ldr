@@ -6,17 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net"
-	"os"
 	"strings"
-	"time"
 	"tr/com/havelsan/hloader/api"
-	"tr/com/havelsan/hloader/util"
 	"unicode/utf16"
 
 	"github.com/ecks/uefi/efi/efivario"
 	"github.com/ecks/uefi/efi/efivars"
-	"google.golang.org/grpc"
 )
 
 type PowerCtlInterface interface {
@@ -24,17 +19,35 @@ type PowerCtlInterface interface {
 	Restart() error
 	Logout() error
 	RestartTo(target int32) error
+	RestartToOnce(target int32) error
 }
 type PowerCtl struct {
 	ServiceInterface
 	api.LoaderServer
 	PowerCtlInterface
-	gs        *grpc.Server
-	listener  net.Listener
-	announcer net.UDPConn
-	efiCtx    efivario.Context
+	efiCtx efivario.Context
 }
 
+// imp service
+func (s *PowerCtl) Init(c *ServiceCtxt) error {
+	api.RegisterLoaderServer(c.gs, s)
+	err := s.LowInit()
+	if err != nil {
+		return err
+	}
+	s.efiCtx = efivario.NewDefaultContext()
+	return nil
+}
+
+func (s *PowerCtl) Start(c *ServiceCtxt) error {
+	return nil
+}
+
+func (s *PowerCtl) Stop(c *ServiceCtxt) error {
+	return nil
+}
+
+// imp PowerCtlInterface
 func (s *PowerCtl) PowerCtl(ctx context.Context, req *api.PowerCtlOrder) (*api.Result, error) {
 	log.Println("Order ", req.Order, req.Param)
 	var err error = nil
@@ -59,58 +72,6 @@ func (s *PowerCtl) PowerCtl(ctx context.Context, req *api.PowerCtlOrder) (*api.R
 			Result:  0,
 			Message: "Success",
 		}, nil
-	}
-}
-
-func (s *PowerCtl) Start() error {
-	iface, addr := util.InterfaceByAddress("10.10.")
-	if iface == nil {
-		panic(errors.New("iface not found"))
-	}
-	laddr, err := net.ResolveUDPAddr("udp", strings.Split(addr.String(), "/")[0]+":0")
-	if err != nil {
-		panic(err)
-	}
-
-	listener, err := net.Listen("tcp", strings.Split(addr.String(), "/")[0]+":0")
-	if err != nil {
-		log.Fatal(err.Error())
-		return nil
-	}
-	log.Println(listener.Addr().String())
-
-	raddr, err := net.ResolveUDPAddr("udp", "239.0.0.72:16644")
-	if err != nil {
-		panic(err)
-	}
-	ucon, err := net.DialUDP("udp", laddr, raddr)
-	if err != nil {
-		panic(err)
-	}
-	s.announcer = *ucon
-	s.listener = listener
-	s.gs = grpc.NewServer()
-	api.RegisterLoaderServer(s.gs, s)
-
-	go s.startAnnounce()
-	if err := s.gs.Serve(listener); err != nil {
-		log.Printf("serve error")
-		return nil
-	}
-	return nil
-}
-func (s *PowerCtl) startAnnounce() {
-	for {
-		hostname, err := os.Hostname()
-		if err != nil {
-			panic(err)
-		}
-		res, err := s.announcer.Write([]byte(hostname + "|" + s.listener.Addr().String()))
-		if err != nil {
-			log.Println("Exiting", res)
-			return
-		}
-		time.Sleep(time.Second)
 	}
 }
 
@@ -208,15 +169,8 @@ func (s *PowerCtl) RestartToOnce(target int32) error {
 	}
 	return errors.New("boot entry not found")
 }
-func (s *PowerCtl) Init() error {
-	err := s.LowInit()
-	if err != nil {
-		return err
-	}
-	s.efiCtx = efivario.NewDefaultContext()
-	return nil
-}
 
+// internal
 func getEnvVar(c efivario.Context, name string) []byte {
 	size, err := c.GetSizeHint(name, efivars.GlobalVariable)
 	if err != nil {

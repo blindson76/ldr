@@ -5,13 +5,14 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"tr/com/havelsan/hloader/service"
 
 	"github.com/judwhite/go-svc"
 )
 
 type program struct {
 	LogFile *os.File
-	svr     *ServiceCtx
+	svr     *service.ServiceCtxt
 	ctx     context.Context
 }
 
@@ -23,7 +24,7 @@ func main() {
 	defer cancel()
 
 	prg := program{
-		svr: DefaultService(),
+		svr: service.DefaultServiceCtxt(),
 		ctx: ctx,
 	}
 
@@ -64,19 +65,19 @@ func (p *program) Init(env svc.Environment) error {
 	} else {
 		// return errors.New("this is not windows service")
 	}
-	err := p.svr.init()
+	err := p.svr.Init()
 	return err
 }
 
 func (p *program) Start() error {
 	log.Printf("Starting...\n")
-	p.svr.start()
+	p.svr.Start()
 	return nil
 }
 
 func (p *program) Stop() error {
 	log.Printf("Stopping...\n")
-	if err := p.svr.stop(); err != nil {
+	if err := p.svr.Stop(); err != nil {
 		return err
 	}
 	log.Printf("Stopped.\n")

@@ -5,6 +5,9 @@ import (
 	"os/exec"
 )
 
+func (s *PowerCtl) LowInit() error {
+	return nil
+}
 func (s *PowerCtl) Restart() error {
 
 	log.Println("Restart")
@@ -39,7 +42,4 @@ func (s *PowerCtl) Logout() error {
 	} else {
 		return nil
 	}
-}
-func (s *PowerCtl) LowInit() error {
-	return nil
 }

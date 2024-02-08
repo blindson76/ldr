@@ -6,19 +6,20 @@ import (
 	"log"
 	"os"
 	"syscall"
+	"tr/com/havelsan/hloader/service"
 
 	"github.com/sevlyar/go-daemon"
 )
 
 type program struct {
 	LogFile *os.File
-	svr     *ServiceCtx
+	svr     *service.ServiceCtxt
 	ctx     context.Context
 }
 
 var (
 	signal = flag.String("s", "", "send signal to daemon")
-	prg    = DefaultService()
+	prg    = service.DefaultServiceCtxt()
 )
 
 func (p *program) Context() context.Context {
@@ -59,7 +60,7 @@ func main() {
 	log.Println("--------------------------")
 	log.Println("Daemon started")
 
-	prg.init()
+	prg.Init()
 
 	go worker()
 
@@ -76,9 +77,9 @@ var (
 )
 
 func worker() {
-	prg.start()
+	prg.Start()
 	<-stop
-	prg.stop()
+	prg.Stop()
 
 	done <- struct{}{}
 }

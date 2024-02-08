@@ -50,6 +50,48 @@ func InitiateShutdownW(machineName *uint16, message *uint16, timeout uint32, shu
 	return err
 }
 
+// service init
+func (s *PowerCtl) LowInit() error {
+
+	var token windows.Token
+	tkp := windows.Tokenprivileges{}
+	err := windows.OpenProcessToken(windows.CurrentProcess(), windows.TOKEN_ADJUST_PRIVILEGES|windows.TOKEN_QUERY, &token)
+	if err != nil {
+		return err
+	}
+	//SeSystemEnvironmentPrivilege
+	priv, err := windows.UTF16PtrFromString("SeShutdownPrivilege")
+	if err != nil {
+		return err
+	}
+	err = windows.LookupPrivilegeValue(nil, priv, &tkp.Privileges[0].Luid)
+	if err != nil {
+		return err
+	}
+	tkp.PrivilegeCount = 1
+	tkp.Privileges[0].Attributes = windows.SE_PRIVILEGE_ENABLED
+	err = windows.AdjustTokenPrivileges(token, false, &tkp, 0, nil, nil)
+	if err != nil {
+		return err
+	}
+	priv, err = windows.UTF16PtrFromString("SeSystemEnvironmentPrivilege")
+	if err != nil {
+		return err
+	}
+	err = windows.LookupPrivilegeValue(nil, priv, &tkp.Privileges[0].Luid)
+	if err != nil {
+		return err
+	}
+	tkp.PrivilegeCount = 1
+	tkp.Privileges[0].Attributes = windows.SE_PRIVILEGE_ENABLED
+	err = windows.AdjustTokenPrivileges(token, false, &tkp, 0, nil, nil)
+	if err == nil {
+		log.Println("GOT ENVVAR privilege")
+	}
+	return nil
+}
+
+// powerctl
 func (s *PowerCtl) Restart2() error {
 	// err = InitiateShutdownW(nil, nil, 0, 0x1, 0)
 	// return err
@@ -101,48 +143,4 @@ func (s *PowerCtl) Logout() error {
 		}
 	}
 	return errors.New("logoff failed")
-}
-
-func (s *PowerCtl) LowInit() error {
-
-	var token windows.Token
-	tkp := windows.Tokenprivileges{}
-	err := windows.OpenProcessToken(windows.CurrentProcess(), windows.TOKEN_ADJUST_PRIVILEGES|windows.TOKEN_QUERY, &token)
-	if err != nil {
-		return err
-	}
-	//SeSystemEnvironmentPrivilege
-	priv, err := windows.UTF16PtrFromString("SeShutdownPrivilege")
-	if err != nil {
-		return err
-	}
-	err = windows.LookupPrivilegeValue(nil, priv, &tkp.Privileges[0].Luid)
-	if err != nil {
-		return err
-	}
-	tkp.PrivilegeCount = 1
-	tkp.Privileges[0].Attributes = windows.SE_PRIVILEGE_ENABLED
-	err = windows.AdjustTokenPrivileges(token, false, &tkp, 0, nil, nil)
-	if err != nil {
-		return err
-	}
-	priv, err = windows.UTF16PtrFromString("SeSystemEnvironmentPrivilege")
-	if err != nil {
-		return err
-	}
-	err = windows.LookupPrivilegeValue(nil, priv, &tkp.Privileges[0].Luid)
-	if err != nil {
-		return err
-	}
-	tkp.PrivilegeCount = 1
-	tkp.Privileges[0].Attributes = windows.SE_PRIVILEGE_ENABLED
-	err = windows.AdjustTokenPrivileges(token, false, &tkp, 0, nil, nil)
-	if err == nil {
-		log.Println("GOT ENVVAR privilege")
-	}
-	return nil
-}
-
-func (s *PowerCtl) Stop() error {
-	return nil
 }

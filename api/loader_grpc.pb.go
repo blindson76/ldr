@@ -103,3 +103,89 @@ var Loader_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "proto/loader.proto",
 }
+
+// DeploymentClient is the client API for Deployment service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type DeploymentClient interface {
+	Info(ctx context.Context, in *InfoRequest, opts ...grpc.CallOption) (*InfoResponse, error)
+}
+
+type deploymentClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewDeploymentClient(cc grpc.ClientConnInterface) DeploymentClient {
+	return &deploymentClient{cc}
+}
+
+func (c *deploymentClient) Info(ctx context.Context, in *InfoRequest, opts ...grpc.CallOption) (*InfoResponse, error) {
+	out := new(InfoResponse)
+	err := c.cc.Invoke(ctx, "/Deployment/Info", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DeploymentServer is the server API for Deployment service.
+// All implementations must embed UnimplementedDeploymentServer
+// for forward compatibility
+type DeploymentServer interface {
+	Info(context.Context, *InfoRequest) (*InfoResponse, error)
+	mustEmbedUnimplementedDeploymentServer()
+}
+
+// UnimplementedDeploymentServer must be embedded to have forward compatible implementations.
+type UnimplementedDeploymentServer struct {
+}
+
+func (UnimplementedDeploymentServer) Info(context.Context, *InfoRequest) (*InfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Info not implemented")
+}
+func (UnimplementedDeploymentServer) mustEmbedUnimplementedDeploymentServer() {}
+
+// UnsafeDeploymentServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to DeploymentServer will
+// result in compilation errors.
+type UnsafeDeploymentServer interface {
+	mustEmbedUnimplementedDeploymentServer()
+}
+
+func RegisterDeploymentServer(s grpc.ServiceRegistrar, srv DeploymentServer) {
+	s.RegisterService(&Deployment_ServiceDesc, srv)
+}
+
+func _Deployment_Info_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DeploymentServer).Info(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Deployment/Info",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DeploymentServer).Info(ctx, req.(*InfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// Deployment_ServiceDesc is the grpc.ServiceDesc for Deployment service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Deployment_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "Deployment",
+	HandlerType: (*DeploymentServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Info",
+			Handler:    _Deployment_Info_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "proto/loader.proto",
+}
