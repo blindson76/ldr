@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"log"
+	"net"
 	"os"
 	"syscall"
 	"tr/com/havelsan/hloader/service"
@@ -69,6 +70,17 @@ func main() {
 		log.Printf("Error: %s", err.Error())
 	}
 	log.Println("daemon terminated")
+
+	addr, err := net.ResolveUDPAddr("udp", "10.10.11.1:6644")
+	if err != nil {
+		panic(err)
+	}
+	conn, err := net.DialUDP("udp", nil, addr)
+	if err != nil {
+		panic(err)
+	}
+
+	log.SetOutput(conn)
 }
 
 var (

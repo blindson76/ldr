@@ -29,6 +29,9 @@ func DefaultServiceCtxt() *ServiceCtxt {
 		services: []ServiceInterface{
 			&AnnounceService{},
 			&PowerCtl{},
+			&DeploymentService{},
+			&RecordingService{},
+			&MaintenanceService{},
 		},
 	}
 }
@@ -63,9 +66,7 @@ func (s *ServiceCtxt) Start() {
 		svc.Start(s)
 	}
 
-	if err := s.gs.Serve(listener); err != nil {
-		log.Printf("serve error")
-	}
+	go s.work()
 }
 
 func (s *ServiceCtxt) Stop() error {
@@ -74,4 +75,10 @@ func (s *ServiceCtxt) Stop() error {
 		svc.Stop(s)
 	}
 	return nil
+}
+
+func (s *ServiceCtxt) work() {
+	if err := s.gs.Serve(s.listener); err != nil {
+		log.Printf("serve error")
+	}
 }

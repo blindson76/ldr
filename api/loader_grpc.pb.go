@@ -18,6 +18,124 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
+// MaintainClient is the client API for Maintain service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type MaintainClient interface {
+	UpdateLoader(ctx context.Context, opts ...grpc.CallOption) (Maintain_UpdateLoaderClient, error)
+}
+
+type maintainClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewMaintainClient(cc grpc.ClientConnInterface) MaintainClient {
+	return &maintainClient{cc}
+}
+
+func (c *maintainClient) UpdateLoader(ctx context.Context, opts ...grpc.CallOption) (Maintain_UpdateLoaderClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Maintain_ServiceDesc.Streams[0], "/loader.Maintain/UpdateLoader", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &maintainUpdateLoaderClient{stream}
+	return x, nil
+}
+
+type Maintain_UpdateLoaderClient interface {
+	Send(*UpdateRequest) error
+	Recv() (*UpdateResponse, error)
+	grpc.ClientStream
+}
+
+type maintainUpdateLoaderClient struct {
+	grpc.ClientStream
+}
+
+func (x *maintainUpdateLoaderClient) Send(m *UpdateRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *maintainUpdateLoaderClient) Recv() (*UpdateResponse, error) {
+	m := new(UpdateResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// MaintainServer is the server API for Maintain service.
+// All implementations must embed UnimplementedMaintainServer
+// for forward compatibility
+type MaintainServer interface {
+	UpdateLoader(Maintain_UpdateLoaderServer) error
+	mustEmbedUnimplementedMaintainServer()
+}
+
+// UnimplementedMaintainServer must be embedded to have forward compatible implementations.
+type UnimplementedMaintainServer struct {
+}
+
+func (UnimplementedMaintainServer) UpdateLoader(Maintain_UpdateLoaderServer) error {
+	return status.Errorf(codes.Unimplemented, "method UpdateLoader not implemented")
+}
+func (UnimplementedMaintainServer) mustEmbedUnimplementedMaintainServer() {}
+
+// UnsafeMaintainServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to MaintainServer will
+// result in compilation errors.
+type UnsafeMaintainServer interface {
+	mustEmbedUnimplementedMaintainServer()
+}
+
+func RegisterMaintainServer(s grpc.ServiceRegistrar, srv MaintainServer) {
+	s.RegisterService(&Maintain_ServiceDesc, srv)
+}
+
+func _Maintain_UpdateLoader_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(MaintainServer).UpdateLoader(&maintainUpdateLoaderServer{stream})
+}
+
+type Maintain_UpdateLoaderServer interface {
+	Send(*UpdateResponse) error
+	Recv() (*UpdateRequest, error)
+	grpc.ServerStream
+}
+
+type maintainUpdateLoaderServer struct {
+	grpc.ServerStream
+}
+
+func (x *maintainUpdateLoaderServer) Send(m *UpdateResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *maintainUpdateLoaderServer) Recv() (*UpdateRequest, error) {
+	m := new(UpdateRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// Maintain_ServiceDesc is the grpc.ServiceDesc for Maintain service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Maintain_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "loader.Maintain",
+	HandlerType: (*MaintainServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "UpdateLoader",
+			Handler:       _Maintain_UpdateLoader_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
+	Metadata: "proto/loader.proto",
+}
+
 // LoaderClient is the client API for Loader service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
@@ -35,7 +153,7 @@ func NewLoaderClient(cc grpc.ClientConnInterface) LoaderClient {
 
 func (c *loaderClient) PowerCtl(ctx context.Context, in *PowerCtlOrder, opts ...grpc.CallOption) (*Result, error) {
 	out := new(Result)
-	err := c.cc.Invoke(ctx, "/Loader/PowerCtl", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/loader.Loader/PowerCtl", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +198,7 @@ func _Loader_PowerCtl_Handler(srv interface{}, ctx context.Context, dec func(int
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Loader/PowerCtl",
+		FullMethod: "/loader.Loader/PowerCtl",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(LoaderServer).PowerCtl(ctx, req.(*PowerCtlOrder))
@@ -92,7 +210,7 @@ func _Loader_PowerCtl_Handler(srv interface{}, ctx context.Context, dec func(int
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Loader_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Loader",
+	ServiceName: "loader.Loader",
 	HandlerType: (*LoaderServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -109,6 +227,7 @@ var Loader_ServiceDesc = grpc.ServiceDesc{
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DeploymentClient interface {
 	Info(ctx context.Context, in *InfoRequest, opts ...grpc.CallOption) (*InfoResponse, error)
+	Exec(ctx context.Context, in *ExecRequest, opts ...grpc.CallOption) (*ExecResponse, error)
 }
 
 type deploymentClient struct {
@@ -121,7 +240,16 @@ func NewDeploymentClient(cc grpc.ClientConnInterface) DeploymentClient {
 
 func (c *deploymentClient) Info(ctx context.Context, in *InfoRequest, opts ...grpc.CallOption) (*InfoResponse, error) {
 	out := new(InfoResponse)
-	err := c.cc.Invoke(ctx, "/Deployment/Info", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/loader.Deployment/Info", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *deploymentClient) Exec(ctx context.Context, in *ExecRequest, opts ...grpc.CallOption) (*ExecResponse, error) {
+	out := new(ExecResponse)
+	err := c.cc.Invoke(ctx, "/loader.Deployment/Exec", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -133,6 +261,7 @@ func (c *deploymentClient) Info(ctx context.Context, in *InfoRequest, opts ...gr
 // for forward compatibility
 type DeploymentServer interface {
 	Info(context.Context, *InfoRequest) (*InfoResponse, error)
+	Exec(context.Context, *ExecRequest) (*ExecResponse, error)
 	mustEmbedUnimplementedDeploymentServer()
 }
 
@@ -142,6 +271,9 @@ type UnimplementedDeploymentServer struct {
 
 func (UnimplementedDeploymentServer) Info(context.Context, *InfoRequest) (*InfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Info not implemented")
+}
+func (UnimplementedDeploymentServer) Exec(context.Context, *ExecRequest) (*ExecResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Exec not implemented")
 }
 func (UnimplementedDeploymentServer) mustEmbedUnimplementedDeploymentServer() {}
 
@@ -166,10 +298,28 @@ func _Deployment_Info_Handler(srv interface{}, ctx context.Context, dec func(int
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Deployment/Info",
+		FullMethod: "/loader.Deployment/Info",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DeploymentServer).Info(ctx, req.(*InfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Deployment_Exec_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExecRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DeploymentServer).Exec(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/loader.Deployment/Exec",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DeploymentServer).Exec(ctx, req.(*ExecRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -178,12 +328,138 @@ func _Deployment_Info_Handler(srv interface{}, ctx context.Context, dec func(int
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Deployment_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Deployment",
+	ServiceName: "loader.Deployment",
 	HandlerType: (*DeploymentServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Info",
 			Handler:    _Deployment_Info_Handler,
+		},
+		{
+			MethodName: "Exec",
+			Handler:    _Deployment_Exec_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "proto/loader.proto",
+}
+
+// RecordingClient is the client API for Recording service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type RecordingClient interface {
+	Status(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*RecordStatusResponse, error)
+	RecordControl(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error)
+}
+
+type recordingClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewRecordingClient(cc grpc.ClientConnInterface) RecordingClient {
+	return &recordingClient{cc}
+}
+
+func (c *recordingClient) Status(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*RecordStatusResponse, error) {
+	out := new(RecordStatusResponse)
+	err := c.cc.Invoke(ctx, "/loader.Recording/Status", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *recordingClient) RecordControl(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error) {
+	out := new(RecordResponse)
+	err := c.cc.Invoke(ctx, "/loader.Recording/RecordControl", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// RecordingServer is the server API for Recording service.
+// All implementations must embed UnimplementedRecordingServer
+// for forward compatibility
+type RecordingServer interface {
+	Status(context.Context, *Empty) (*RecordStatusResponse, error)
+	RecordControl(context.Context, *RecordRequest) (*RecordResponse, error)
+	mustEmbedUnimplementedRecordingServer()
+}
+
+// UnimplementedRecordingServer must be embedded to have forward compatible implementations.
+type UnimplementedRecordingServer struct {
+}
+
+func (UnimplementedRecordingServer) Status(context.Context, *Empty) (*RecordStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Status not implemented")
+}
+func (UnimplementedRecordingServer) RecordControl(context.Context, *RecordRequest) (*RecordResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RecordControl not implemented")
+}
+func (UnimplementedRecordingServer) mustEmbedUnimplementedRecordingServer() {}
+
+// UnsafeRecordingServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to RecordingServer will
+// result in compilation errors.
+type UnsafeRecordingServer interface {
+	mustEmbedUnimplementedRecordingServer()
+}
+
+func RegisterRecordingServer(s grpc.ServiceRegistrar, srv RecordingServer) {
+	s.RegisterService(&Recording_ServiceDesc, srv)
+}
+
+func _Recording_Status_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RecordingServer).Status(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/loader.Recording/Status",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RecordingServer).Status(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Recording_RecordControl_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RecordingServer).RecordControl(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/loader.Recording/RecordControl",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RecordingServer).RecordControl(ctx, req.(*RecordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// Recording_ServiceDesc is the grpc.ServiceDesc for Recording service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Recording_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "loader.Recording",
+	HandlerType: (*RecordingServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Status",
+			Handler:    _Recording_Status_Handler,
+		},
+		{
+			MethodName: "RecordControl",
+			Handler:    _Recording_RecordControl_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

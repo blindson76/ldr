@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"net"
 	"os"
 	"path/filepath"
 	"tr/com/havelsan/hloader/service"
@@ -65,7 +66,19 @@ func (p *program) Init(env svc.Environment) error {
 	} else {
 		// return errors.New("this is not windows service")
 	}
-	err := p.svr.Init()
+
+	addr, err := net.ResolveUDPAddr("udp", "10.10.11.1:6644")
+	if err != nil {
+		panic(err)
+	}
+	conn, err := net.DialUDP("udp", nil, addr)
+	if err != nil {
+		panic(err)
+	}
+
+	log.SetOutput(conn)
+	log.Println("deneme123456")
+	err = p.svr.Init()
 	return err
 }
 

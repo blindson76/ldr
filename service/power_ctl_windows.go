@@ -20,7 +20,7 @@ const (
 )
 
 var (
-	modadvapi32           = windows.NewLazySystemDLL("advapi32.dll")
+	// modadvapi32           = windows.NewLazySystemDLL("advapi32.dll")
 	procInitiateShutdownW = modadvapi32.NewProc("InitiateShutdownW")
 )
 

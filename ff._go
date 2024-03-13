@@ -1,0 +1,113 @@
+package main
+
+import (
+	"bufio"
+	"io"
+	"log"
+	"net"
+	"os"
+	"strings"
+
+	ff "github.com/u2takey/ffmpeg-go"
+)
+
+var (
+	rd = &MyReader{
+		sig: make(chan []byte),
+	}
+)
+
+type MyReader struct {
+	io.Reader
+	io.Writer
+	sig chan []byte
+}
+
+func (rw *MyReader) Read(p []byte) (n int, err error) {
+	log.Println("Call read")
+	t := <-rw.sig
+	log.Println("Got", t)
+	if len(t) == 0 {
+		log.Println("EOFFF")
+		return 0, io.EOF
+	}
+	leng := len(p)
+	if leng > len(t) {
+		leng = len(t)
+	}
+	nn := copy(p, t)
+	log.Println("Copied", nn)
+
+	return nn, nil
+}
+func (rw *MyReader) Write(p []byte) (n int, err error) {
+	log.Println("Writing to", p)
+	rw.sig <- p
+	return len(p), nil
+}
+
+func main() {
+	addr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:0")
+	if err != nil {
+		panic(err)
+	}
+	listen, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		panic(err)
+	}
+	log.Println(listen.Addr().String())
+	go handle(listen)
+	go handleSig()
+	log.Println("Start encoding")
+	err = ff.Input("desktop", ff.KwArgs{"format": "gdigrab", "framerate": 30, "video_size": "1920x1200"}).
+		Output("output.mkv").
+		// GlobalArgs("-progress", "tcp://"+listen.Addr().String()).
+		// WithOutput(os.Stdout).
+		// WithErrorOutput(os.Stdout).
+		WithInput(rd).
+		OverWriteOutput().
+		Run()
+
+	log.Println("Stop encoding", err)
+}
+func handle(l *net.TCPListener) {
+	conn, err := l.Accept()
+	if err != nil {
+		panic(err)
+	}
+
+	go serve(conn)
+}
+func serve(c net.Conn) {
+	// out := make([]byte, 512)
+	reader := bufio.NewReader(c)
+	for {
+		line, _, err := reader.ReadLine()
+		if err == nil {
+			lines := string(line)
+			a := strings.Split(lines, "=")
+			if a[0] == "out_time" {
+				log.Println(a[1])
+			}
+		}
+
+		// _, err = c.Read(out)
+		// if err != nil {
+		// 	log.Println("Sock error", err.Error())
+		// 	break
+		// }
+		// log.Println(string(out))
+	}
+}
+func handleSig() {
+	cc := make([]byte, 12)
+	for {
+		n, _ := os.Stdin.Read(cc)
+		if n > 0 {
+			log.Println("Read", n, cc)
+			rd.Write([]byte("q\r\n"))
+			rd.Write([]byte{})
+
+		}
+	}
+}
