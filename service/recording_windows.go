@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"strconv"
 	"strings"
 	"unsafe"
 
@@ -255,11 +256,23 @@ func StartProcessAsCurrentUser(appPath, cmdLine, workDir string) (*windows.Proce
 		}
 	}()
 
+	go func() {
+		_, err = windows.WaitForSingleObject(processInfo.Process, windows.INFINITE)
+		if err != nil {
+			log.Println("WaitProcess error:" + err.Error())
+			return
+		}
+		var exitCode uint32
+		err = windows.GetExitCodeProcess(processInfo.Process, &exitCode)
+		if err != nil {
+			log.Println("WaitProcess error:" + err.Error())
+			return
+		}
+		log.Println("Proc exited:" + strconv.Itoa(int(exitCode)))
+
+	}()
+
 	return &processInfo, nil
-}
-func (s *RecordingService) rec_start_win() error {
-	log.Printf("sdfs")
-	return nil
 }
 
 func (s *RecordingService) rec_start() error {
@@ -308,9 +321,9 @@ func (s *RecordingService) rec_start() error {
 		}
 		go func() {
 			log.Println("Cli connected")
-			reader := bufio.NewReader(conn)
+			breader := bufio.NewReader(conn)
 			for {
-				line, _, err := reader.ReadLine()
+				line, _, err := breader.ReadLine()
 				if err == nil {
 					// log.Println("Read line")
 					lines := string(line)
@@ -329,6 +342,8 @@ func (s *RecordingService) rec_start() error {
 					mu.Lock()
 					defer mu.Unlock()
 					status = "finish"
+					reader = nil
+					log.Println("reader nulled", reader)
 					return
 				}
 			}
@@ -351,7 +366,6 @@ func (s *RecordingService) rec_stop() error {
 	err := windows.WriteFile(proc_stdin_wr, rout, &writed, nil)
 	// _, err := StartProcessAsCurrentUser("C:/windows/system32/taskkill.exe", "taskkill /pid "+strconv.FormatUint(uint64(pid), 10), "")
 	log.Println(err)
-	reader = nil
 	return err
 }
 
