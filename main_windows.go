@@ -77,7 +77,7 @@ func (p *program) Init(env svc.Environment) error {
 	}
 
 	log.SetOutput(conn)
-	log.Println("deneme123456")
+	log.Println("starting loader service")
 	err = p.svr.Init()
 	return err
 }

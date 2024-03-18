@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"net"
-	"strconv"
 	"strings"
 	"unsafe"
 
@@ -28,7 +27,9 @@ var (
 	procCreateProcessAsUser          *windows.LazyProc = modadvapi32.NewProc("CreateProcessAsUserW")
 )
 var (
-	r *myReader = nil
+	reader *myReader = nil
+
+	proc_stdin_wr windows.Handle
 )
 
 const (
@@ -92,7 +93,7 @@ type WTS_SESSION_INFO struct {
 }
 
 const (
-	CREATE_UNICODE_ENVIRONMENT uint16 = 0x00000400
+	CREATE_UNICODE_ENVIRONMENT uint32 = 0x00000400
 	CREATE_NO_WINDOW                  = 0x08000000
 	CREATE_NEW_CONSOLE                = 0x00000010
 )
@@ -194,9 +195,7 @@ func StartProcessAsCurrentUser(appPath, cmdLine, workDir string) (*windows.Proce
 		return nil, fmt.Errorf("create environment details for process: %s", err)
 	}
 
-	creationFlags := CREATE_UNICODE_ENVIRONMENT
-	startupInfo.ShowWindow = 2
-	startupInfo.Desktop = windows.StringToUTF16Ptr("winsta0\\default")
+	creationFlags := CREATE_UNICODE_ENVIRONMENT | CREATE_NO_WINDOW
 
 	if len(cmdLine) > 0 {
 		commandLine = uintptr(unsafe.Pointer(windows.StringToUTF16Ptr(cmdLine)))
@@ -205,25 +204,41 @@ func StartProcessAsCurrentUser(appPath, cmdLine, workDir string) (*windows.Proce
 		workingDir = uintptr(unsafe.Pointer(windows.StringToUTF16Ptr(workDir)))
 	}
 
-	var rHnd windows.Handle
-	var wHnd windows.Handle
+	var stdin_rd windows.Handle
+	var stdin_wr windows.Handle
+	var stdout_rd windows.Handle
+	var stdout_wr windows.Handle
 	var sa windows.SecurityAttributes
 	sa.InheritHandle = 1
 	sa.SecurityDescriptor = nil
-	err = windows.CreatePipe(&rHnd, &wHnd, &sa, 0)
+	err = windows.CreatePipe(&stdout_rd, &stdout_wr, &sa, 0)
 	if err != nil {
 		return nil, err
 	}
-	err = windows.SetHandleInformation(rHnd, windows.HANDLE_FLAG_INHERIT, 0)
+	err = windows.SetHandleInformation(stdout_rd, windows.HANDLE_FLAG_INHERIT, 0)
 	if err != nil {
 		return nil, err
 	}
-	// startupInfo.StdOutput = wHnd
-	// startupInfo.StdErr = wHnd
+	err = windows.CreatePipe(&stdin_rd, &stdin_wr, &sa, 0)
+	if err != nil {
+		return nil, err
+	}
+	err = windows.SetHandleInformation(stdin_wr, windows.HANDLE_FLAG_INHERIT, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	proc_stdin_wr = stdin_wr
+	startupInfo.ShowWindow = uint16(SW_HIDE)
+	startupInfo.Desktop = windows.StringToUTF16Ptr("winsta0\\default")
+	startupInfo.StdErr = stdout_wr
+	startupInfo.StdOutput = stdout_wr
+	startupInfo.StdInput = stdin_rd
+	startupInfo.Flags = windows.STARTF_USESHOWWINDOW | windows.STARTF_USESTDHANDLES
 
 	if returnCode, _, err := procCreateProcessAsUser.Call(
-		uintptr(userToken), uintptr(unsafe.Pointer(windows.StringToUTF16Ptr(appPath))), commandLine, 0, 0, 0,
-		uintptr(creationFlags), uintptr(envInfo), workingDir, uintptr(unsafe.Pointer(&startupInfo)), uintptr(unsafe.Pointer(&processInfo)),
+		uintptr(userToken), uintptr(unsafe.Pointer(windows.StringToUTF16Ptr(appPath))), commandLine, 0, 0, 1,
+		uintptr(creationFlags), 0, workingDir, uintptr(unsafe.Pointer(&startupInfo)), uintptr(unsafe.Pointer(&processInfo)),
 	); returnCode == 0 {
 		return nil, fmt.Errorf("create process as user: %s", err)
 	}
@@ -231,12 +246,12 @@ func StartProcessAsCurrentUser(appPath, cmdLine, workDir string) (*windows.Proce
 		log.Println("Pipe routine")
 		for {
 			out := make([]byte, 512)
-			n, err := windows.Read(rHnd, out)
+			n, err := windows.Read(stdout_rd, out)
 			if err != nil {
 				log.Println("Pipe read error", err.Error())
 				return
 			}
-			log.Println("Read ", n, "bytes")
+			log.Println("Read ", string(out[:n]), "bytes")
 		}
 	}()
 
@@ -250,7 +265,7 @@ func (s *RecordingService) rec_start_win() error {
 func (s *RecordingService) rec_start() error {
 	mu.Lock()
 	defer mu.Unlock()
-	if r != nil {
+	if reader != nil {
 		return errors.New("not available")
 	}
 	addr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:0")
@@ -261,7 +276,7 @@ func (s *RecordingService) rec_start() error {
 	if err != nil {
 		return err
 	}
-	r = &myReader{
+	reader = &myReader{
 		sig: make(chan []byte),
 	}
 	// log.Println("createing log filesss")
@@ -323,7 +338,7 @@ func (s *RecordingService) rec_start() error {
 	return nil
 }
 func (s *RecordingService) rec_stop() error {
-	log.Println("stop routin")
+	log.Println("stop routinrrrrr")
 	mu.Lock()
 	defer mu.Unlock()
 	log.Println("stop start")
@@ -331,9 +346,12 @@ func (s *RecordingService) rec_stop() error {
 		return errors.New("stop in queue")
 	}
 	status = "stopping"
-	_, err := StartProcessAsCurrentUser("C:/windows/system32/taskkill.exe", "taskkill /pid "+strconv.FormatUint(uint64(pid), 10), "")
+	rout := []byte("q")
+	var writed uint32 = 0
+	err := windows.WriteFile(proc_stdin_wr, rout, &writed, nil)
+	// _, err := StartProcessAsCurrentUser("C:/windows/system32/taskkill.exe", "taskkill /pid "+strconv.FormatUint(uint64(pid), 10), "")
 	log.Println(err)
-	r = nil
+	reader = nil
 	return err
 }
 
