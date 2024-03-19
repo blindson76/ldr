@@ -98,7 +98,6 @@ func (s *ServiceCtxt) bindInterface(addr net.Addr) {
 	log.Println("grpc bind interfaces", addr)
 	//time.Sleep(time.Second * 1)
 	for {
-		log.Println("grpc bind interface after sleep")
 		listener, err := net.Listen("tcp", strings.Split(addr.String(), "/")[0]+":0")
 		if err != nil {
 			log.Println("listen err", addr, err.Error())
