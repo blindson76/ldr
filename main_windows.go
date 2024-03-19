@@ -67,7 +67,7 @@ func (p *program) Init(env svc.Environment) error {
 		// return errors.New("this is not windows service")
 	}
 
-	addr, err := net.ResolveUDPAddr("udp", "10.10.11.1:6644")
+	addr, err := net.ResolveUDPAddr("udp", "10.20.11.1:6644")
 	if err != nil {
 		panic(err)
 	}
