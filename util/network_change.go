@@ -9,7 +9,7 @@ type NetworkListener interface {
 }
 type NetworkChangeNotifier struct {
 	observers map[NetworkListener]string
-	status    map[NetworkListener]bool
+	status    map[NetworkListener]net.Addr
 	emits     chan struct{}
 	stop      chan struct{}
 }
@@ -17,7 +17,7 @@ type NetworkChangeNotifier struct {
 func NewNetworkChangeNotifier() *NetworkChangeNotifier {
 	notifier := &NetworkChangeNotifier{
 		observers: map[NetworkListener]string{},
-		status:    map[NetworkListener]bool{},
+		status:    map[NetworkListener]net.Addr{},
 		emits:     make(chan struct{}),
 		stop:      make(chan struct{}),
 	}
@@ -28,14 +28,14 @@ func (n *NetworkChangeNotifier) networkChanged() {
 
 		iface, addr := InterfaceByAddress(address)
 		if iface != nil && (iface.Flags&net.FlagUp) > 0 && (iface.Flags&net.FlagRunning) > 0 {
-			if !n.status[k] {
-				n.status[k] = true
+			if n.status[k] == nil || n.status[k].String() != addr.String() {
+				n.status[k] = addr
 				k.NetworkChanged(true, addr)
 			}
 
 		} else {
-			if n.status[k] {
-				n.status[k] = false
+			if n.status[k] != nil {
+				n.status[k] = nil
 				k.NetworkChanged(false, nil)
 			}
 		}
@@ -44,7 +44,7 @@ func (n *NetworkChangeNotifier) networkChanged() {
 }
 func (n *NetworkChangeNotifier) Subscribe(observer NetworkListener, address string) {
 	n.observers[observer] = address
-	n.status[observer] = false
+	n.status[observer] = nil
 
 }
 func (n *NetworkChangeNotifier) Start() {
