@@ -17,7 +17,7 @@ var (
 var ()
 
 func (n *NetworkChangeNotifier) init() {
-	log.Println("init notifieras")
+	log.Println("init network change notifier")
 	cb := syscall.NewCallback(func(ctx uintptr, row uintptr, changeType uintptr) uint64 {
 		n.emits <- struct{}{}
 		return 0
