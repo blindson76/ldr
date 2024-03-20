@@ -46,10 +46,10 @@ func (s *MaintenanceService) UpdateLoader(req api.Maintain_UpdateLoaderServer) e
 			return err
 		}
 		switch u := request.Data.(type) {
-		case *api.UpdateRequest_Info:
+		case *api.UploadRequest_Info:
 			log.Println("Info:", u.Info)
 			total = u.Info.Size
-			fname = u.Info.Name
+			fname = u.Info.GetName()
 			// f, err := os.OpenFile(fname, os.O_RDWR|os.O_CREATE, 0644)
 			f, err := ioutil.TempFile("", "hvl_*")
 			if err != nil {
@@ -59,7 +59,7 @@ func (s *MaintenanceService) UpdateLoader(req api.Maintain_UpdateLoaderServer) e
 			log.Println("File:", fname, f)
 			defer f.Close()
 			file = f
-		case *api.UpdateRequest_Chunk:
+		case *api.UploadRequest_Chunk:
 			// log.Println("Chunk", u.Chunk.Seq)
 			n, err := file.Write(u.Chunk.Data)
 			if err != nil {
@@ -68,15 +68,15 @@ func (s *MaintenanceService) UpdateLoader(req api.Maintain_UpdateLoaderServer) e
 			}
 			received += uint32(n)
 			// log.Println("Write bytes", n)
-			req.Send(&api.UpdateResponse{
-				Data: &api.UpdateResponse_Progress{
+			req.Send(&api.UploadResponse{
+				Data: &api.UploadResponse_Progress{
 					Progress: strconv.FormatInt(int64(int(received)*100/int(total)), 10) + "%",
 				},
 			})
 			if received == total {
 				log.Println("Done")
 			}
-		case *api.UpdateRequest_Hash:
+		case *api.UploadRequest_Hash:
 			log.Println("Finish", u.Hash)
 			ret, err := file.Seek(0, 0)
 			if err != nil || ret != 0 {

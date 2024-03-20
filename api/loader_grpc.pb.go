@@ -43,8 +43,8 @@ func (c *maintainClient) UpdateLoader(ctx context.Context, opts ...grpc.CallOpti
 }
 
 type Maintain_UpdateLoaderClient interface {
-	Send(*UpdateRequest) error
-	Recv() (*UpdateResponse, error)
+	Send(*UploadRequest) error
+	Recv() (*UploadResponse, error)
 	grpc.ClientStream
 }
 
@@ -52,12 +52,12 @@ type maintainUpdateLoaderClient struct {
 	grpc.ClientStream
 }
 
-func (x *maintainUpdateLoaderClient) Send(m *UpdateRequest) error {
+func (x *maintainUpdateLoaderClient) Send(m *UploadRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *maintainUpdateLoaderClient) Recv() (*UpdateResponse, error) {
-	m := new(UpdateResponse)
+func (x *maintainUpdateLoaderClient) Recv() (*UploadResponse, error) {
+	m := new(UploadResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -97,8 +97,8 @@ func _Maintain_UpdateLoader_Handler(srv interface{}, stream grpc.ServerStream) e
 }
 
 type Maintain_UpdateLoaderServer interface {
-	Send(*UpdateResponse) error
-	Recv() (*UpdateRequest, error)
+	Send(*UploadResponse) error
+	Recv() (*UploadRequest, error)
 	grpc.ServerStream
 }
 
@@ -106,12 +106,12 @@ type maintainUpdateLoaderServer struct {
 	grpc.ServerStream
 }
 
-func (x *maintainUpdateLoaderServer) Send(m *UpdateResponse) error {
+func (x *maintainUpdateLoaderServer) Send(m *UploadResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *maintainUpdateLoaderServer) Recv() (*UpdateRequest, error) {
-	m := new(UpdateRequest)
+func (x *maintainUpdateLoaderServer) Recv() (*UploadRequest, error) {
+	m := new(UploadRequest)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -228,6 +228,7 @@ var Loader_ServiceDesc = grpc.ServiceDesc{
 type DeploymentClient interface {
 	Info(ctx context.Context, in *InfoRequest, opts ...grpc.CallOption) (*InfoResponse, error)
 	Exec(ctx context.Context, in *ExecRequest, opts ...grpc.CallOption) (*ExecResponse, error)
+	Upload(ctx context.Context, opts ...grpc.CallOption) (Deployment_UploadClient, error)
 }
 
 type deploymentClient struct {
@@ -256,12 +257,44 @@ func (c *deploymentClient) Exec(ctx context.Context, in *ExecRequest, opts ...gr
 	return out, nil
 }
 
+func (c *deploymentClient) Upload(ctx context.Context, opts ...grpc.CallOption) (Deployment_UploadClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Deployment_ServiceDesc.Streams[0], "/loader.Deployment/Upload", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &deploymentUploadClient{stream}
+	return x, nil
+}
+
+type Deployment_UploadClient interface {
+	Send(*UploadRequest) error
+	Recv() (*UploadResponse, error)
+	grpc.ClientStream
+}
+
+type deploymentUploadClient struct {
+	grpc.ClientStream
+}
+
+func (x *deploymentUploadClient) Send(m *UploadRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *deploymentUploadClient) Recv() (*UploadResponse, error) {
+	m := new(UploadResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // DeploymentServer is the server API for Deployment service.
 // All implementations must embed UnimplementedDeploymentServer
 // for forward compatibility
 type DeploymentServer interface {
 	Info(context.Context, *InfoRequest) (*InfoResponse, error)
 	Exec(context.Context, *ExecRequest) (*ExecResponse, error)
+	Upload(Deployment_UploadServer) error
 	mustEmbedUnimplementedDeploymentServer()
 }
 
@@ -274,6 +307,9 @@ func (UnimplementedDeploymentServer) Info(context.Context, *InfoRequest) (*InfoR
 }
 func (UnimplementedDeploymentServer) Exec(context.Context, *ExecRequest) (*ExecResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Exec not implemented")
+}
+func (UnimplementedDeploymentServer) Upload(Deployment_UploadServer) error {
+	return status.Errorf(codes.Unimplemented, "method Upload not implemented")
 }
 func (UnimplementedDeploymentServer) mustEmbedUnimplementedDeploymentServer() {}
 
@@ -324,6 +360,32 @@ func _Deployment_Exec_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Deployment_Upload_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(DeploymentServer).Upload(&deploymentUploadServer{stream})
+}
+
+type Deployment_UploadServer interface {
+	Send(*UploadResponse) error
+	Recv() (*UploadRequest, error)
+	grpc.ServerStream
+}
+
+type deploymentUploadServer struct {
+	grpc.ServerStream
+}
+
+func (x *deploymentUploadServer) Send(m *UploadResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *deploymentUploadServer) Recv() (*UploadRequest, error) {
+	m := new(UploadRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // Deployment_ServiceDesc is the grpc.ServiceDesc for Deployment service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -340,7 +402,14 @@ var Deployment_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Deployment_Exec_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Upload",
+			Handler:       _Deployment_Upload_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "proto/loader.proto",
 }
 

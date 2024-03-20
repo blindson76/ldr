@@ -7,13 +7,6 @@ import (
 	"strings"
 	"time"
 	"tr/com/havelsan/hloader/util"
-
-	"golang.org/x/sys/windows"
-)
-
-var (
-	modiphlpapi              = windows.NewLazySystemDLL("iphlpapi.dll")
-	procGetAdaptersAddresses = modiphlpapi.NewProc("NotifyIpInterfaceChange")
 )
 
 type AnnounceService struct {
@@ -23,7 +16,6 @@ type AnnounceService struct {
 	raddr *net.UDPAddr
 	conn  *net.UDPConn
 
-	notifyHandle     windows.Handle
 	linkUp           bool
 	interfaceAddress string
 	ctx              *ServiceCtxt

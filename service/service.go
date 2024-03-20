@@ -7,7 +7,6 @@ import (
 	"time"
 	"tr/com/havelsan/hloader/util"
 
-	"golang.org/x/sys/windows"
 	"google.golang.org/grpc"
 )
 
@@ -24,7 +23,6 @@ type ServiceCtxt struct {
 	laddr            net.Addr
 	listener         net.Listener
 	iface            *net.Interface
-	notifyHandle     windows.Handle
 	linkUp           bool
 	interfaceAddress string
 	networkListener  *util.NetworkChangeNotifier
