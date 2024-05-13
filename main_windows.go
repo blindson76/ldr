@@ -67,16 +67,18 @@ func (p *program) Init(env svc.Environment) error {
 		// return errors.New("this is not windows service")
 	}
 
-	addr, err := net.ResolveUDPAddr("udp", "10.20.11.1:6644")
+	addr, err := net.ResolveUDPAddr("udp", "10.10.11.1:6644")
 	if err != nil {
-		panic(err)
-	}
-	conn, err := net.DialUDP("udp", nil, addr)
-	if err != nil {
-		panic(err)
-	}
+		log.Println("Couldn't resolve remote debug address")
+	} else {
+		conn, err := net.DialUDP("udp", nil, addr)
+		if err != nil {
+			log.Println("Couldn't connect remote debug server")
+		} else {
+			log.SetOutput(conn)
+		}
 
-	log.SetOutput(conn)
+	}
 	log.Println("starting loader service")
 	err = p.svr.Init()
 	return err

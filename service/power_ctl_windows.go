@@ -2,7 +2,6 @@ package service
 
 import (
 	"C"
-	"errors"
 	"log"
 	"os/exec"
 	"regexp"
@@ -142,5 +141,5 @@ func (s *PowerCtl) Logout() error {
 
 		}
 	}
-	return errors.New("logoff failed")
+	return err
 }
