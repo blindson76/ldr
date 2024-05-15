@@ -78,9 +78,11 @@ func main() {
 	conn, err := net.DialUDP("udp", nil, addr)
 	if err != nil {
 		panic(err)
+	} else {
+
+		log.SetOutput(conn)
 	}
 
-	log.SetOutput(conn)
 }
 
 var (

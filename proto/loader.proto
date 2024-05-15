@@ -89,8 +89,39 @@ message RecordResponse {
     string status = 1;
 }
 
+message PartitionInfo {
+    uint64 size = 1;
+    string type = 2;
+    string label = 3;
+    repeated string flags = 4;
+}
+
+message DiskLayout {
+    string location = 1;
+    string partitionType = 2;
+    repeated PartitionInfo partitions = 3;
+}
+
+message PartitionRequest {
+    repeated DiskLayout disks = 1;
+}
+
+message PartitionResponse {
+    uint32 result = 1;
+}
+message AplyImageStatus {
+    string status = 1;
+}
+message ApplyImageRequest {
+    string imagePath = 1;
+    string imageIndex = 2;
+    string targetDisk = 3;
+    uint32 targetPartition = 4;
+}
 service Maintain {
     rpc UpdateLoader(stream UploadRequest) returns (stream UploadResponse){}
+    rpc FormatDisks(PartitionRequest) returns (PartitionResponse){}
+    rpc ApplyImage(ApplyImageRequest) returns (stream AplyImageStatus){}
 }
 
 service Loader {

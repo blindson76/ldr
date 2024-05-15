@@ -8,57 +8,6 @@ github.com/0x5a17ed/itkit/ittuple
 ## explicit; go 1.18
 # github.com/aws/aws-sdk-go v1.38.20
 ## explicit; go 1.11
-github.com/aws/aws-sdk-go/aws
-github.com/aws/aws-sdk-go/aws/arn
-github.com/aws/aws-sdk-go/aws/awserr
-github.com/aws/aws-sdk-go/aws/awsutil
-github.com/aws/aws-sdk-go/aws/client
-github.com/aws/aws-sdk-go/aws/client/metadata
-github.com/aws/aws-sdk-go/aws/corehandlers
-github.com/aws/aws-sdk-go/aws/credentials
-github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds
-github.com/aws/aws-sdk-go/aws/credentials/endpointcreds
-github.com/aws/aws-sdk-go/aws/credentials/processcreds
-github.com/aws/aws-sdk-go/aws/credentials/ssocreds
-github.com/aws/aws-sdk-go/aws/credentials/stscreds
-github.com/aws/aws-sdk-go/aws/csm
-github.com/aws/aws-sdk-go/aws/defaults
-github.com/aws/aws-sdk-go/aws/ec2metadata
-github.com/aws/aws-sdk-go/aws/endpoints
-github.com/aws/aws-sdk-go/aws/request
-github.com/aws/aws-sdk-go/aws/session
-github.com/aws/aws-sdk-go/aws/signer/v4
-github.com/aws/aws-sdk-go/internal/context
-github.com/aws/aws-sdk-go/internal/ini
-github.com/aws/aws-sdk-go/internal/s3shared
-github.com/aws/aws-sdk-go/internal/s3shared/arn
-github.com/aws/aws-sdk-go/internal/s3shared/s3err
-github.com/aws/aws-sdk-go/internal/sdkio
-github.com/aws/aws-sdk-go/internal/sdkmath
-github.com/aws/aws-sdk-go/internal/sdkrand
-github.com/aws/aws-sdk-go/internal/sdkuri
-github.com/aws/aws-sdk-go/internal/shareddefaults
-github.com/aws/aws-sdk-go/internal/strings
-github.com/aws/aws-sdk-go/internal/sync/singleflight
-github.com/aws/aws-sdk-go/private/checksum
-github.com/aws/aws-sdk-go/private/protocol
-github.com/aws/aws-sdk-go/private/protocol/eventstream
-github.com/aws/aws-sdk-go/private/protocol/eventstream/eventstreamapi
-github.com/aws/aws-sdk-go/private/protocol/json/jsonutil
-github.com/aws/aws-sdk-go/private/protocol/jsonrpc
-github.com/aws/aws-sdk-go/private/protocol/query
-github.com/aws/aws-sdk-go/private/protocol/query/queryutil
-github.com/aws/aws-sdk-go/private/protocol/rest
-github.com/aws/aws-sdk-go/private/protocol/restjson
-github.com/aws/aws-sdk-go/private/protocol/restxml
-github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil
-github.com/aws/aws-sdk-go/service/s3
-github.com/aws/aws-sdk-go/service/s3/s3iface
-github.com/aws/aws-sdk-go/service/s3/s3manager
-github.com/aws/aws-sdk-go/service/sso
-github.com/aws/aws-sdk-go/service/sso/ssoiface
-github.com/aws/aws-sdk-go/service/sts
-github.com/aws/aws-sdk-go/service/sts/stsiface
 # github.com/ecks/uefi v0.0.0-20221116212947-caef65d070eb
 ## explicit; go 1.18
 github.com/ecks/uefi/efi/efiguid
@@ -77,36 +26,28 @@ github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
+# github.com/google/go-cmp v0.5.9
+## explicit; go 1.13
 # github.com/insomniacslk/dhcp v0.0.0-20231206064809-8c70d406f6d2
 ## explicit; go 1.20
-github.com/insomniacslk/dhcp/dhcpv4
-github.com/insomniacslk/dhcp/dhcpv4/server4
-github.com/insomniacslk/dhcp/iana
-github.com/insomniacslk/dhcp/interfaces
-github.com/insomniacslk/dhcp/rfc1035label
 # github.com/jmespath/go-jmespath v0.4.0
 ## explicit; go 1.14
-github.com/jmespath/go-jmespath
 # github.com/josharian/native v1.1.0
 ## explicit; go 1.13
-github.com/josharian/native
 # github.com/judwhite/go-svc v1.2.1
 ## explicit; go 1.15
 github.com/judwhite/go-svc
 # github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 ## explicit
 github.com/kardianos/osext
+# github.com/mdlayher/netlink v1.7.2
+## explicit; go 1.18
+# github.com/mdlayher/socket v0.4.1
+## explicit; go 1.20
 # github.com/pierrec/lz4/v4 v4.1.14
 ## explicit; go 1.14
-github.com/pierrec/lz4/v4
-github.com/pierrec/lz4/v4/internal/lz4block
-github.com/pierrec/lz4/v4/internal/lz4errors
-github.com/pierrec/lz4/v4/internal/lz4stream
-github.com/pierrec/lz4/v4/internal/xxh32
 # github.com/pin/tftp/v3 v3.1.0
 ## explicit; go 1.13
-github.com/pin/tftp/v3
-github.com/pin/tftp/v3/netascii
 # github.com/sevlyar/go-daemon v0.1.6
 ## explicit
 github.com/sevlyar/go-daemon
@@ -117,15 +58,10 @@ github.com/spf13/afero/internal/common
 github.com/spf13/afero/mem
 # github.com/u-root/uio v0.0.0-20230220225925-ffce2a382923
 ## explicit; go 1.16
-github.com/u-root/uio/rand
-github.com/u-root/uio/uio
 # github.com/u2takey/ffmpeg-go v0.5.0
 ## explicit; go 1.16
-github.com/u2takey/ffmpeg-go
 # github.com/u2takey/go-utils v0.3.1
 ## explicit; go 1.15
-github.com/u2takey/go-utils/rand
-github.com/u2takey/go-utils/sets
 # go.uber.org/atomic v1.10.0
 ## explicit; go 1.18
 go.uber.org/atomic
@@ -137,17 +73,14 @@ go.uber.org/multierr
 golang.org/x/exp/constraints
 # golang.org/x/net v0.17.0
 ## explicit; go 1.17
-golang.org/x/net/bpf
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
-golang.org/x/net/internal/iana
-golang.org/x/net/internal/socket
 golang.org/x/net/internal/timeseries
-golang.org/x/net/ipv4
-golang.org/x/net/ipv6
 golang.org/x/net/trace
+# golang.org/x/sync v0.4.0
+## explicit; go 1.17
 # golang.org/x/sys v0.13.0
 ## explicit; go 1.17
 golang.org/x/sys/unix
