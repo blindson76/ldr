@@ -114,7 +114,7 @@ message AplyImageStatus {
 }
 message ApplyImageRequest {
     string imagePath = 1;
-    string imageIndex = 2;
+    uint32 imageIndex = 2;
     string targetDisk = 3;
     uint32 targetPartition = 4;
 }
