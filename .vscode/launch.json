@@ -18,7 +18,7 @@
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/prog_wim/wim.go",
+        "program": "${workspaceFolder}/rtest/rtest.go",
         "asRoot": true,
         "console": "integratedTerminal"
     },

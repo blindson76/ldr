@@ -4,15 +4,41 @@ package parted
 #cgo CFLAGS:-I/home/user/work/mini/src/work/tmp_rootfs/include -I/home/user/work/mini/src/work/tmp_rootfs/usr/include
 #cgo LDFLAGS:-L /home/user/work/mini/src/work/tmp_rootfs/lib -L /home/user/work/mini/src/work/tmp_rootfs/usr/lib -lparted
 #include <sys/stat.h>
+#include <sys/mount.h>
+#include <mntent.h>
 #include <libudev.h>
 #include <parted/parted.h>
+
+static inline char* GetMount(char* file){
+
+	struct mntent *ent;
+	FILE *aFile;
+
+	aFile = setmntent("/proc/mounts", "r");
+	if (aFile == NULL) {
+		return NULL;
+	}
+	while (NULL != (ent = getmntent(aFile))) {
+		if (strcmp(file, ent->mnt_fsname) == 0){
+			return ent->mnt_dir;
+		}
+	}
+	endmntent(aFile);
+	return NULL;
+}
+
 */
 import "C"
 import (
+	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"unsafe"
@@ -20,12 +46,24 @@ import (
 
 type PedDisk struct {
 	pDisk *C.PedDisk
+	dev   *PedDevice
 }
 type PedDevice struct {
 	pDev *C.PedDevice
 }
 type PedPartition struct {
 	pPart *C.PedPartition
+}
+
+type PedAlignment struct {
+	pAlign *C.PedAlignment
+}
+
+type PedConstraint struct {
+	pConst *C.PedConstraint
+}
+type PedGeometry struct {
+	pGeo *C.PedGeometry
 }
 
 func (p *PedDevice) GetDisk() *PedDisk {
@@ -35,6 +73,7 @@ func (p *PedDevice) GetDisk() *PedDisk {
 	}
 	return &PedDisk{
 		pDisk: pDisk,
+		dev:   p,
 	}
 }
 func (d *PedDevice) GetSysPath() string {
@@ -51,8 +90,58 @@ func (p *PedDevice) MkLabel(diskType string) *PedDisk {
 	}
 	return &PedDisk{
 		pDisk: pDisk,
+		dev:   p,
 	}
 }
+func (p *PedDevice) Constraint() *PedConstraint {
+	pConst := C.ped_device_get_constraint(p.pDev)
+	if pConst == nil {
+		return nil
+	}
+	return &PedConstraint{
+		pConst: pConst,
+	}
+}
+
+// ped_device_get_minimal_aligned_constraint
+func (p *PedDevice) ConstraintMinAlign() *PedConstraint {
+	pConst := C.ped_device_get_minimal_aligned_constraint(p.pDev)
+	if pConst == nil {
+		return nil
+	}
+	return &PedConstraint{
+		pConst: pConst,
+	}
+}
+func (p *PedDevice) ConstraintOptAlign() *PedConstraint {
+	pConst := C.ped_device_get_optimal_aligned_constraint(p.pDev)
+	if pConst == nil {
+		return nil
+	}
+	return &PedConstraint{
+		pConst: pConst,
+	}
+}
+
+func (p *PedDevice) AlignmentOpt() *PedAlignment {
+	pAlign := C.ped_device_get_optimum_alignment(p.pDev)
+	if pAlign == nil {
+		return nil
+	}
+	return &PedAlignment{
+		pAlign: pAlign,
+	}
+}
+func (p *PedDevice) AlignmentMin() *PedAlignment {
+	pAlign := C.ped_device_get_minimum_alignment(p.pDev)
+	if pAlign == nil {
+		return nil
+	}
+	return &PedAlignment{
+		pAlign: pAlign,
+	}
+}
+
 func (d *PedDisk) Commit() error {
 	log.Println("Commiting changes")
 	res := C.ped_disk_commit(d.pDisk)
@@ -85,10 +174,6 @@ func (d *PedDisk) RmPart(partNum int) error {
 }
 func (d *PedDisk) MkPart(partType string, size uint64, flags []string, label string) *PedPartition {
 	log.Println("MKPart:", partType, size)
-	pAlign := C.ped_disk_get_partition_alignment(d.pDisk)
-	if pAlign == nil {
-		panic("couldn't get alignment")
-	}
 
 	sectorSize := d.pDisk.dev.sector_size
 	log.Println("SectorSize:", sectorSize)
@@ -104,6 +189,10 @@ func (d *PedDisk) MkPart(partType string, size uint64, flags []string, label str
 		}
 
 	}
+	lcm := LCM(34, 2048)
+	lstart := (((start - 1) / C.longlong(lcm)) + 1) * C.longlong(lcm)
+	start = lstart
+	log.Println(lstart)
 	end := start + C.longlong(size*1000*1000)/sectorSize
 	pedFS := C.ped_file_system_type_get(C.CString(partType))
 	if pedFS == nil {
@@ -114,12 +203,19 @@ func (d *PedDisk) MkPart(partType string, size uint64, flags []string, label str
 	if newPart == nil {
 		panic("partition couldn't be created")
 	}
-	pedConstraint := C.ped_constraint_any(d.pDisk.dev)
-	res := C.ped_disk_add_partition(d.pDisk, newPart, pedConstraint)
+
+	pPart := &PedPartition{
+		pPart: newPart,
+	}
+	log.Printf("Created partition start:%d, end:%d, size:%d", pPart.StartOffset(), pPart.EndOffset(), pPart.GetSize())
+	pedConstraint := d.dev.ConstraintOptAlign()
+
+	res := C.ped_disk_add_partition(d.pDisk, newPart, pedConstraint.pConst)
 	if res != 0 {
 		pPart := &PedPartition{
 			pPart: newPart,
 		}
+		log.Printf("Added   partition start:%d, end:%d, size:%d", pPart.StartOffset(), pPart.EndOffset(), pPart.GetSize())
 
 		//modify flags
 		for _, flag := range flags {
@@ -142,6 +238,15 @@ func (d *PedDisk) UUID() []byte {
 	}
 	data := C.GoBytes(unsafe.Pointer(uid), 16)
 	return data
+}
+func (d *PedDisk) GetAlignment() *PedAlignment {
+	pAlign := C.ped_disk_get_partition_alignment(d.pDisk)
+	if pAlign == nil {
+		return nil
+	}
+	return &PedAlignment{
+		pAlign: pAlign,
+	}
 }
 
 func (d *PedDisk) GetPartitionCount() int {
@@ -188,16 +293,16 @@ func (p *PedPartition) SetLabel(label string) error {
 	return nil
 }
 func (p *PedPartition) GetSize() uint64 {
-	return uint64(p.pPart.geom.length / p.pPart.disk.dev.sector_size)
+	return uint64(p.pPart.geom.length)
 }
 func (p *PedPartition) GetSizeMB() uint64 {
 	return uint64(p.pPart.geom.length*p.pPart.disk.dev.sector_size) / 1000 / 1000
 }
 func (p *PedPartition) EndOffset() uint64 {
-	return uint64(p.pPart.geom.end / p.pPart.disk.dev.sector_size)
+	return uint64(p.pPart.geom.end)
 }
 func (p *PedPartition) StartOffset() uint64 {
-	return uint64(p.pPart.geom.start / p.pPart.disk.dev.sector_size)
+	return uint64(p.pPart.geom.start)
 }
 
 func (p *PedPartition) GetFSType() string {
@@ -212,6 +317,33 @@ func (p *PedPartition) UUID() []byte {
 	return data
 }
 
+func NewConstMin(geo *PedGeometry) *PedConstraint {
+	pConst := C.ped_constraint_new_from_min(geo.pGeo)
+	if pConst == nil {
+		return nil
+	}
+	return &PedConstraint{
+		pConst: pConst,
+	}
+}
+func NewConstMax(geo *PedGeometry) *PedConstraint {
+	pConst := C.ped_constraint_new_from_max(geo.pGeo)
+	if pConst == nil {
+		return nil
+	}
+	return &PedConstraint{
+		pConst: pConst,
+	}
+}
+func NewGeometry(dev *PedDevice, start, end int) *PedGeometry {
+	pGeo := C.ped_geometry_new(dev.pDev, C.PedSector(start), C.PedSector(end))
+	if pGeo == nil {
+		return nil
+	}
+	return &PedGeometry{
+		pGeo: pGeo,
+	}
+}
 func GetDevice(dev string) *PedDevice {
 	pDev := C.ped_device_get(C.CString(dev))
 	if pDev == nil {
@@ -220,6 +352,35 @@ func GetDevice(dev string) *PedDevice {
 	return &PedDevice{
 		pDev: pDev,
 	}
+}
+
+func Mkntfs(target, label string) error {
+
+	cmd := exec.Command("/usr/sbin/mkntfs", "-Q", target)
+	if label != "" {
+		cmd = exec.Command("/usr/sbin/mkntfs", "-Q", "-L", label, target)
+	}
+	log.Writer()
+	cmd.Stdout = log.Writer()
+	cmd.Stderr = log.Writer()
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func Mkvfat(target, label string) error {
+	cmd := exec.Command("/sbin/mkfs.vfat", "-n", label, target)
+	if label != "" {
+		cmd = exec.Command("/sbin/mkfs.vfat", target)
+	}
+	//cmd.Stdout = os.Stdout
+	//cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func Devices() []string {
@@ -301,6 +462,11 @@ func GetDiskAndPartNum(part string) (string, int) {
 	return "/dev/" + parentDev, int(stat.st_rdev - pstat.st_rdev)
 }
 
+func CheckMount(target string) string {
+	return C.GoString(C.GetMount(C.CString(target)))
+
+}
+
 // todo: find a better way
 func GetDiskDevByLocation(loc string) string {
 	direntry, er := os.ReadDir("/sys/class/block/")
@@ -315,4 +481,163 @@ func GetDiskDevByLocation(loc string) string {
 		}
 	}
 	return ""
+}
+
+func Mount(target, fsType string) (string, error) {
+	dir, err := os.MkdirTemp("", "wim")
+	if err != nil {
+		return "", err
+	}
+	err = nil
+	switch fsType {
+	case "ntfs":
+		_, err = exec.Command("/usr/bin/ntfs-3g", target, dir).CombinedOutput()
+	case "fat32":
+		_, err = exec.Command("/bin/mount", target, dir).CombinedOutput()
+	case "winregfs":
+		_, err = exec.Command("/bin/mount.winregfs", target, dir).CombinedOutput()
+
+	}
+	if err != nil {
+		return "", err
+	}
+	return dir, nil
+}
+func Mount2(target string) (string, error) {
+	dir, err := os.MkdirTemp("", "wim")
+	if err != nil {
+		return "", err
+	}
+
+	res, err := C.mount(C.CString(target), C.CString(dir), C.CString("fuseblk"), 0, unsafe.Pointer(C.CString("allow_other,blksize=4096,fd=4,ro")))
+	if res != 0 {
+		return "", err
+	}
+	return dir, nil
+}
+func Unmount(dir string) error {
+	log.Println("unmounting", dir)
+	ret := C.umount2(C.CString(dir), C.MNT_FORCE)
+	if ret != 0 {
+		return errors.New("could't umount")
+	}
+	log.Println("Deleting temporary")
+	os.RemoveAll(dir)
+	return nil
+}
+func BCDFix(espDisk string, espPartition uint32, osDisk string, osPartition uint32) error {
+	log.Printf("BCDFix %s %d %s %d", espDisk, espPartition, osDisk, osPartition)
+	bcdDiskDev := GetDiskDevByLocation(espDisk)
+	if bcdDiskDev == "" {
+		return fmt.Errorf("couldn't find esp disk:%s", espDisk)
+	}
+	log.Printf("Found bcdDevDisk:%s", bcdDiskDev)
+
+	espPartDev := GetDevByPartNum(bcdDiskDev, int(espPartition))
+	if espPartDev == "" {
+		return fmt.Errorf("couldn't find esp partition:%s:%d", espDisk, espPartition)
+	}
+	log.Printf("Found espPartDev:%s", espPartDev)
+
+	log.Printf("Mounting %s", espPartDev)
+	mntDir, err := Mount(espPartDev, "fat32")
+	if err != nil {
+		return err
+	}
+	log.Printf("Mount %s to %s", espPartDev, mntDir)
+	defer Unmount(mntDir)
+
+	osDiskDev := GetDiskDevByLocation(osDisk)
+	if osDiskDev == "" {
+		return fmt.Errorf("couldn't find os disk:%s", osDisk)
+	}
+	osDev := GetDevice(osDiskDev)
+	if osDev == nil {
+		return fmt.Errorf("couldn't find esp disk dev:%s", espDisk)
+	}
+	pOsDisk := osDev.GetDisk()
+	if pOsDisk == nil {
+		return fmt.Errorf("couldn't find esp disk:%s", espDisk)
+	}
+	diskUUID := EncodeUUID(pOsDisk.UUID())
+	pOSPart := pOsDisk.GetPartition(int(osPartition))
+	if pOSPart == nil {
+		return fmt.Errorf("couldn't find os part:%s:%d", osDisk, osPartition)
+	}
+	partUUID := EncodeUUID(pOSPart.UUID())
+	log.Println(hex.EncodeToString(diskUUID), hex.EncodeToString(partUUID))
+
+	bcdFilePath := fmt.Sprintf("%s/EFI/Microsoft/Boot/BCD", mntDir)
+	log.Println(bcdFilePath)
+	bcdFile, err := os.Stat(bcdFilePath)
+	if err != nil {
+		return err
+	}
+	log.Println(bcdFile)
+
+	log.Printf("mounting %s", bcdFilePath)
+	mntBCD, err := Mount(bcdFilePath, "winregfs")
+	if err != nil {
+		log.Println("Mount Failed", err)
+		return err
+	}
+	log.Printf("Mount %s to %s", bcdFilePath, mntBCD)
+	defer Unmount(mntBCD)
+
+	err = filepath.Walk(mntBCD, func(dir string, info os.FileInfo, err error) error {
+		if info != nil && !info.IsDir() {
+			fPath := path.Join(dir, "")
+			if strings.Contains(fPath, "1000001/Element.bin") {
+				log.Printf("BCD entry: %s", fPath)
+				data, err := os.ReadFile(fPath)
+				if err != nil {
+					return fmt.Errorf("couldn't read bcd entry:%s", fPath)
+
+				}
+				log.Printf("O:%s", hex.EncodeToString(data))
+				newData := data[:]
+				copy(newData[32:], partUUID)
+				copy(newData[56:], diskUUID)
+				log.Printf("N:%s", hex.EncodeToString(newData))
+				err = os.WriteFile(fPath, newData, 0777)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// greatest common divisor (GCD) via Euclidean algorithm
+func GCD(a, b int) int {
+	for b != 0 {
+		t := b
+		b = a % b
+		a = t
+	}
+	return a
+}
+
+// find Least Common Multiple (LCM) via GCD
+func LCM(a, b int, integers ...int) int {
+	result := a * b / GCD(a, b)
+
+	for i := 0; i < len(integers); i++ {
+		result = LCM(result, integers[i])
+	}
+
+	return result
+}
+func EncodeUUID(data []byte) []byte {
+	ndata := make([]byte, 16)
+	copy(ndata, data)
+	binary.LittleEndian.PutUint32(ndata[0:], binary.BigEndian.Uint32(data[0:]))
+	binary.LittleEndian.PutUint16(ndata[4:], binary.BigEndian.Uint16(data[4:]))
+	binary.LittleEndian.PutUint16(ndata[6:], binary.BigEndian.Uint16(data[6:]))
+	return ndata
 }

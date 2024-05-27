@@ -94,6 +94,7 @@ message PartitionInfo {
     string type = 2;
     string label = 3;
     repeated string flags = 4;
+    bool format = 5;
 }
 
 message DiskLayout {
@@ -107,7 +108,7 @@ message PartitionRequest {
 }
 
 message PartitionResponse {
-    uint32 result = 1;
+    string status = 1;
 }
 message AplyImageStatus {
     string status = 1;
@@ -118,10 +119,20 @@ message ApplyImageRequest {
     string targetDisk = 3;
     uint32 targetPartition = 4;
 }
+message BCDFixRequest {
+    string espDisk = 1;
+    uint32 espPartition = 2;
+    string osDisk = 3;
+    uint32 osPartition = 4;
+}
+message BCDFixResponse {
+    string status = 1;
+}
 service Maintain {
     rpc UpdateLoader(stream UploadRequest) returns (stream UploadResponse){}
-    rpc FormatDisks(PartitionRequest) returns (PartitionResponse){}
+    rpc FormatDisks(PartitionRequest) returns (stream PartitionResponse){}
     rpc ApplyImage(ApplyImageRequest) returns (stream AplyImageStatus){}
+    rpc BCDFix(BCDFixRequest) returns (BCDFixResponse){}
 }
 
 service Loader {

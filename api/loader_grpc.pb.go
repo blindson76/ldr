@@ -22,6 +22,7 @@ const (
 	Maintain_UpdateLoader_FullMethodName = "/loader.Maintain/UpdateLoader"
 	Maintain_FormatDisks_FullMethodName  = "/loader.Maintain/FormatDisks"
 	Maintain_ApplyImage_FullMethodName   = "/loader.Maintain/ApplyImage"
+	Maintain_BCDFix_FullMethodName       = "/loader.Maintain/BCDFix"
 )
 
 // MaintainClient is the client API for Maintain service.
@@ -29,8 +30,9 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MaintainClient interface {
 	UpdateLoader(ctx context.Context, opts ...grpc.CallOption) (Maintain_UpdateLoaderClient, error)
-	FormatDisks(ctx context.Context, in *PartitionRequest, opts ...grpc.CallOption) (*PartitionResponse, error)
+	FormatDisks(ctx context.Context, in *PartitionRequest, opts ...grpc.CallOption) (Maintain_FormatDisksClient, error)
 	ApplyImage(ctx context.Context, in *ApplyImageRequest, opts ...grpc.CallOption) (Maintain_ApplyImageClient, error)
+	BCDFix(ctx context.Context, in *BCDFixRequest, opts ...grpc.CallOption) (*BCDFixResponse, error)
 }
 
 type maintainClient struct {
@@ -72,17 +74,40 @@ func (x *maintainUpdateLoaderClient) Recv() (*UploadResponse, error) {
 	return m, nil
 }
 
-func (c *maintainClient) FormatDisks(ctx context.Context, in *PartitionRequest, opts ...grpc.CallOption) (*PartitionResponse, error) {
-	out := new(PartitionResponse)
-	err := c.cc.Invoke(ctx, Maintain_FormatDisks_FullMethodName, in, out, opts...)
+func (c *maintainClient) FormatDisks(ctx context.Context, in *PartitionRequest, opts ...grpc.CallOption) (Maintain_FormatDisksClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Maintain_ServiceDesc.Streams[1], Maintain_FormatDisks_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &maintainFormatDisksClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Maintain_FormatDisksClient interface {
+	Recv() (*PartitionResponse, error)
+	grpc.ClientStream
+}
+
+type maintainFormatDisksClient struct {
+	grpc.ClientStream
+}
+
+func (x *maintainFormatDisksClient) Recv() (*PartitionResponse, error) {
+	m := new(PartitionResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *maintainClient) ApplyImage(ctx context.Context, in *ApplyImageRequest, opts ...grpc.CallOption) (Maintain_ApplyImageClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Maintain_ServiceDesc.Streams[1], Maintain_ApplyImage_FullMethodName, opts...)
+	stream, err := c.cc.NewStream(ctx, &Maintain_ServiceDesc.Streams[2], Maintain_ApplyImage_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -113,13 +138,23 @@ func (x *maintainApplyImageClient) Recv() (*AplyImageStatus, error) {
 	return m, nil
 }
 
+func (c *maintainClient) BCDFix(ctx context.Context, in *BCDFixRequest, opts ...grpc.CallOption) (*BCDFixResponse, error) {
+	out := new(BCDFixResponse)
+	err := c.cc.Invoke(ctx, Maintain_BCDFix_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MaintainServer is the server API for Maintain service.
 // All implementations must embed UnimplementedMaintainServer
 // for forward compatibility
 type MaintainServer interface {
 	UpdateLoader(Maintain_UpdateLoaderServer) error
-	FormatDisks(context.Context, *PartitionRequest) (*PartitionResponse, error)
+	FormatDisks(*PartitionRequest, Maintain_FormatDisksServer) error
 	ApplyImage(*ApplyImageRequest, Maintain_ApplyImageServer) error
+	BCDFix(context.Context, *BCDFixRequest) (*BCDFixResponse, error)
 	mustEmbedUnimplementedMaintainServer()
 }
 
@@ -130,11 +165,14 @@ type UnimplementedMaintainServer struct {
 func (UnimplementedMaintainServer) UpdateLoader(Maintain_UpdateLoaderServer) error {
 	return status.Errorf(codes.Unimplemented, "method UpdateLoader not implemented")
 }
-func (UnimplementedMaintainServer) FormatDisks(context.Context, *PartitionRequest) (*PartitionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method FormatDisks not implemented")
+func (UnimplementedMaintainServer) FormatDisks(*PartitionRequest, Maintain_FormatDisksServer) error {
+	return status.Errorf(codes.Unimplemented, "method FormatDisks not implemented")
 }
 func (UnimplementedMaintainServer) ApplyImage(*ApplyImageRequest, Maintain_ApplyImageServer) error {
 	return status.Errorf(codes.Unimplemented, "method ApplyImage not implemented")
+}
+func (UnimplementedMaintainServer) BCDFix(context.Context, *BCDFixRequest) (*BCDFixResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BCDFix not implemented")
 }
 func (UnimplementedMaintainServer) mustEmbedUnimplementedMaintainServer() {}
 
@@ -175,22 +213,25 @@ func (x *maintainUpdateLoaderServer) Recv() (*UploadRequest, error) {
 	return m, nil
 }
 
-func _Maintain_FormatDisks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PartitionRequest)
-	if err := dec(in); err != nil {
-		return nil, err
+func _Maintain_FormatDisks_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(PartitionRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(MaintainServer).FormatDisks(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Maintain_FormatDisks_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MaintainServer).FormatDisks(ctx, req.(*PartitionRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(MaintainServer).FormatDisks(m, &maintainFormatDisksServer{stream})
+}
+
+type Maintain_FormatDisksServer interface {
+	Send(*PartitionResponse) error
+	grpc.ServerStream
+}
+
+type maintainFormatDisksServer struct {
+	grpc.ServerStream
+}
+
+func (x *maintainFormatDisksServer) Send(m *PartitionResponse) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 func _Maintain_ApplyImage_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -214,6 +255,24 @@ func (x *maintainApplyImageServer) Send(m *AplyImageStatus) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _Maintain_BCDFix_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BCDFixRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MaintainServer).BCDFix(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Maintain_BCDFix_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MaintainServer).BCDFix(ctx, req.(*BCDFixRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Maintain_ServiceDesc is the grpc.ServiceDesc for Maintain service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -222,8 +281,8 @@ var Maintain_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*MaintainServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "FormatDisks",
-			Handler:    _Maintain_FormatDisks_Handler,
+			MethodName: "BCDFix",
+			Handler:    _Maintain_BCDFix_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
@@ -232,6 +291,11 @@ var Maintain_ServiceDesc = grpc.ServiceDesc{
 			Handler:       _Maintain_UpdateLoader_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
+		},
+		{
+			StreamName:    "FormatDisks",
+			Handler:       _Maintain_FormatDisks_Handler,
+			ServerStreams: true,
 		},
 		{
 			StreamName:    "ApplyImage",

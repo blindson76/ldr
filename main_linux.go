@@ -73,15 +73,16 @@ func main() {
 
 	addr, err := net.ResolveUDPAddr("udp", "10.10.11.1:6644")
 	if err != nil {
-		panic(err)
+		log.Println("Can't resolve remote debug endpoint")
+		return
 	}
 	conn, err := net.DialUDP("udp", nil, addr)
 	if err != nil {
-		panic(err)
-	} else {
-
-		log.SetOutput(conn)
+		log.Println("Can't dial remote debug endpoint")
+		return
 	}
+
+	log.SetOutput(conn)
 
 }
 
