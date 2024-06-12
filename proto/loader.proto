@@ -22,7 +22,7 @@ message Result{
 
 message PowerCtlOrder{
     PowerStatusCommand order = 1;
-    int32   param = 2;
+    string bootEntry = 3;
 }
 
 message InfoResponse{

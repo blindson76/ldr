@@ -49,7 +49,7 @@ func (s *PowerCtl) Stop(c *ServiceCtxt) error {
 
 // imp PowerCtlInterface
 func (s *PowerCtl) PowerCtl(ctx context.Context, req *api.PowerCtlOrder) (*api.Result, error) {
-	log.Println("Order ", req.Order, req.Param)
+	log.Println("Order ", req.Order, req.BootEntry)
 	var err error = nil
 	switch req.Order {
 	case api.PowerStatusCommand_Restart:
@@ -59,7 +59,7 @@ func (s *PowerCtl) PowerCtl(ctx context.Context, req *api.PowerCtlOrder) (*api.R
 	case api.PowerStatusCommand_Shutdown:
 		err = s.Shutdown()
 	case api.PowerStatusCommand_RestartTo:
-		err = s.RestartTo(req.Param)
+		err = s.RestartTo(req.BootEntry)
 	}
 
 	if err != nil {
@@ -75,13 +75,9 @@ func (s *PowerCtl) PowerCtl(ctx context.Context, req *api.PowerCtlOrder) (*api.R
 	}
 }
 
-func (s *PowerCtl) RestartTo(target int32) error {
-	log.Println("RestartTo", target)
-	search := "Windows Boot Manager"
-	if target == 2 {
-		search = "Red Hat"
-	}
-
+func (s *PowerCtl) RestartTo(bootEntry string) error {
+	log.Println("RestartTo", bootEntry)
+	search := bootEntry
 	attr, boorOder, err := efivars.BootOrder.Get(s.efiCtx)
 	if err != nil {
 		return err

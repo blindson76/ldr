@@ -49,7 +49,7 @@ func (s *MaintenanceService) ApplyImage(req *api.ApplyImageRequest, server api.M
 	}
 	w, err := wim.WIMOpen(fmt.Sprintf("/nfs/%s", imgPath))
 	if err != nil {
-		panic(err)
+		return err
 	}
 	server.Send(&api.AplyImageStatus{
 		Status: "Applying image",
