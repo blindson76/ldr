@@ -356,9 +356,9 @@ func GetDevice(dev string) *PedDevice {
 
 func Mkntfs(target, label string) error {
 
-	cmd := exec.Command("/bin/mkntfs", "-Q", target)
+	cmd := exec.Command("mkntfs", "-Q", target)
 	if label != "" {
-		cmd = exec.Command("/bin/mkntfs", "-Q", "-L", label, target)
+		cmd = exec.Command("mkntfs", "-Q", "-L", label, target)
 	}
 	log.Writer()
 	cmd.Stdout = log.Writer()
@@ -370,9 +370,9 @@ func Mkntfs(target, label string) error {
 	return nil
 }
 func Mkvfat(target, label string) error {
-	cmd := exec.Command("/sbin/mkfs.vfat", "-n", label, target)
+	cmd := exec.Command("mkfs.vfat", "-n", label, target)
 	if label != "" {
-		cmd = exec.Command("/sbin/mkfs.vfat", target)
+		cmd = exec.Command("mkfs.vfat", target)
 	}
 	//cmd.Stdout = os.Stdout
 	//cmd.Stderr = os.Stderr
@@ -496,11 +496,11 @@ func Mount(target, fsType string) (string, error) {
 	err = nil
 	switch fsType {
 	case "ntfs":
-		_, err = exec.Command("/bin/ntfs-3g", target, dir).CombinedOutput()
+		_, err = exec.Command("ntfs-3g", target, dir).CombinedOutput()
 	case "fat32":
-		_, err = exec.Command("/bin/mount", target, dir).CombinedOutput()
+		_, err = exec.Command("mount", target, dir).CombinedOutput()
 	case "winregfs":
-		_, err = exec.Command("/bin/mount.winregfs", target, dir).CombinedOutput()
+		_, err = exec.Command("mount.winregfs", target, dir).CombinedOutput()
 
 	}
 	if err != nil {
