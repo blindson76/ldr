@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -39,7 +40,7 @@ func main() {
 		LogFilePerm: 0640,
 		WorkDir:     "./",
 		Umask:       027,
-		Args:        []string{"[go-daemon sample]"},
+		Args:        []string{"[hvl-loader]"},
 	}
 	if len(daemon.ActiveFlags()) > 0 {
 		d, err := cntxt.Search()
@@ -92,6 +93,11 @@ var (
 )
 
 func worker() {
+
+	fmt.Println("ENV VARIABLES")
+	for _, k := range os.Environ() {
+		fmt.Printf("%s=%s", k, os.Getenv(k))
+	}
 	prg.Start()
 	<-stop
 	prg.Stop()

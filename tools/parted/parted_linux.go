@@ -356,9 +356,9 @@ func GetDevice(dev string) *PedDevice {
 
 func Mkntfs(target, label string) error {
 
-	cmd := exec.Command("/usr/sbin/mkntfs", "-Q", target)
+	cmd := exec.Command("/bin/mkntfs", "-Q", target)
 	if label != "" {
-		cmd = exec.Command("/usr/sbin/mkntfs", "-Q", "-L", label, target)
+		cmd = exec.Command("/bin/mkntfs", "-Q", "-L", label, target)
 	}
 	log.Writer()
 	cmd.Stdout = log.Writer()
@@ -403,7 +403,12 @@ func Devices() []string {
 	return nil
 }
 func GetDevByPartNum(disk string, partNum int) string {
-	devName := strings.Split(disk, "/dev/")[1]
+
+	slices := strings.Split(disk, "/dev/")
+	if len(slices) < 2 {
+		return ""
+	}
+	devName := slices[1]
 	read, err := os.ReadFile("/proc/partitions")
 	if err != nil {
 		return ""
@@ -491,7 +496,7 @@ func Mount(target, fsType string) (string, error) {
 	err = nil
 	switch fsType {
 	case "ntfs":
-		_, err = exec.Command("/usr/bin/ntfs-3g", target, dir).CombinedOutput()
+		_, err = exec.Command("/bin/ntfs-3g", target, dir).CombinedOutput()
 	case "fat32":
 		_, err = exec.Command("/bin/mount", target, dir).CombinedOutput()
 	case "winregfs":
