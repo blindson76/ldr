@@ -1,17 +1,15 @@
 package service
 
 import (
-	"C"
 	"log"
 	"os/exec"
 	"regexp"
 	"strings"
 
-	"golang.org/x/sys/windows"
-)
-import (
 	"syscall"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 const (
