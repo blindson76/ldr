@@ -166,6 +166,23 @@ func (s *PowerCtl) RestartToOnce(target int32) error {
 	return errors.New("boot entry not found")
 }
 
+func (s *PowerCtl) BootEntries(c context.Context, req *api.Empty) (*api.BootEntryResponse, error) {
+	_, boorOder, err := efivars.BootOrder.Get(s.efiCtx)
+	if err != nil {
+		return nil, err
+	}
+	entries := make([]string, len(boorOder))
+	for i, boot := range boorOder {
+		desc := getBootDesc(s.efiCtx, fmt.Sprintf("Boot%04d", boot))
+		desc = strings.TrimSpace(desc)
+		log.Println("boot:", boot, "Desc:", desc)
+		entries[i] = desc
+	}
+	return &api.BootEntryResponse{
+		Entries: entries,
+	}, nil
+}
+
 // internal
 func getEnvVar(c efivario.Context, name string) []byte {
 	size, err := c.GetSizeHint(name, efivars.GlobalVariable)
