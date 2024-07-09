@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -196,17 +197,19 @@ func getEnvVar(c efivario.Context, name string) []byte {
 }
 func getBootDesc(c efivario.Context, name string) string {
 	b := getEnvVar(c, name)
-	// log.Println("Attrb", binary.LittleEndian.Uint32(b))
-	// log.Println("FPathLen", binary.LittleEndian.Uint16(b[4:]))
+	if len(b) == 0 {
+		return ""
+	}
+	log.Println("Boot Entry:", hex.EncodeToString(b))
+	// log.Println(hex.EncodeToString(b))
+	log.Println("Attrb", binary.LittleEndian.Uint32(b))
+	log.Println("FPathLen", binary.LittleEndian.Uint16(b[4:]))
 	str := make([]uint16, len(b)/2)
-	// log.Println("Len:", len(b))
+	log.Println("Len:", len(b))
 	for i := 6; i < len(b)-2; i += 2 {
 		v := binary.LittleEndian.Uint16(b[i:])
 		if v == 0 {
-			// log.Println("Ofset:", i)
-
-			// str = str[:i]
-			break
+			return string(utf16.Decode(str[:i/2-3]))
 		}
 		str[i/2-3] = v
 	}

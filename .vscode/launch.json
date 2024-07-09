@@ -18,9 +18,9 @@
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceFolder}/rtest/rtest.go",
+        "program": "${workspaceFolder}/prog_wim/main.go",
         "asRoot": true,
-        "console": "integratedTerminal"
+        "console": "internalConsole"
     },
         {
             "name": "Launch Package",
