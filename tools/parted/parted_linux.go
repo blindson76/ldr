@@ -1,8 +1,7 @@
 package parted
 
 /*
-#cgo CFLAGS:-I/home/user/work/mini/src/work/tmp_rootfs/include -I/home/user/work/mini/src/work/tmp_rootfs/usr/include
-#cgo LDFLAGS:-L /home/user/work/mini/src/work/tmp_rootfs/lib -L /home/user/work/mini/src/work/tmp_rootfs/usr/lib -lparted
+#cgo LDFLAGS:-lparted
 #include <sys/stat.h>
 #include <sys/mount.h>
 #include <mntent.h>

@@ -1,11 +1,11 @@
 package wim
 
 /*
-#cgo CFLAGS:-I/home/user/work/mini/src/work/tmp_rootfs/include -I/home/user/work/mini/src/work/tmp_rootfs/usr/include
-#cgo LDFLAGS:-L /home/user/work/mini/src/work/tmp_rootfs/lib -L /home/user/work/mini/src/work/tmp_rootfs/usr/lib -lwim -lntfs-3g
+//#cgo CFLAGS:-I/home/user/work/mini/src/work/tmp_rootfs/include -I/home/user/work/mini/src/work/tmp_rootfs/usr/include
+#cgo LDFLAGS:-lwim -lntfs-3g
 #include <string.h>
 #include <sys/stat.h>
-#include <libudev.h>
+//#include <libudev.h>
 #include <wimlib.h>
 #include <ntfs-3g/volume.h>
 
