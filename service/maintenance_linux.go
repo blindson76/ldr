@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os/exec"
+	"strings"
 	"tr/com/havelsan/hloader/api"
 	"tr/com/havelsan/hloader/tools/parted"
 	"tr/com/havelsan/hloader/tools/wim"
@@ -28,6 +30,59 @@ func (s *MaintenanceService) BCDFix(c context.Context, req *api.BCDFixRequest) (
 	}, nil
 }
 func (s *MaintenanceService) ApplyImage(req *api.ApplyImageRequest, server api.Maintain_ApplyImageServer) error {
+	imgPath := req.GetImagePath()
+	imgIndex := req.GetImageIndex()
+	targetDisk := req.GetTargetDisk()
+	targetPart := req.GetTargetPartition()
+
+	disk := parted.GetDiskDevByLocation(targetDisk)
+	if disk == "" {
+		return fmt.Errorf("couldn't find disk device:%s", targetDisk)
+	}
+	part := parted.GetDevByPartNum(disk, int(targetPart))
+	if part == "" {
+		return fmt.Errorf("couldn't find partition device:%s", targetPart)
+	}
+	dev := parted.GetDevice(disk)
+	if dev == nil {
+		return fmt.Errorf("couldn't find device:%s", disk)
+	}
+	ddisk := dev.GetDisk()
+	if ddisk == nil {
+		return fmt.Errorf("couldn't find disk:%s", disk)
+	}
+	pPart := ddisk.GetPartition(int(targetPart))
+	if pPart == nil {
+		return fmt.Errorf("couldn't find partition:%d", targetPart)
+	}
+	log.Println("Applying image for fs", pPart.GetFSType())
+	if pPart.GetFSType() != "ntfs" {
+		return s.ApplyImage2(req, server)
+	}
+	cmd := exec.Command("wimapply", fmt.Sprintf("/nfs/%s", imgPath), fmt.Sprintf("%d", imgIndex), fmt.Sprintf("%s", part))
+	stdout, err := cmd.StdoutPipe()
+	cmd.Stderr = cmd.Stdout
+	if err != nil {
+		return err
+	}
+	if err = cmd.Start(); err != nil {
+		return err
+	}
+	for {
+		tmp := make([]byte, 1024)
+		n, err := stdout.Read(tmp)
+		if err != nil {
+			break
+		}
+		server.Send(&api.AplyImageStatus{
+			Status: strings.TrimSpace(string(tmp[:n])),
+		})
+	}
+	err = cmd.Wait()
+	return err
+
+}
+func (s *MaintenanceService) ApplyImage2(req *api.ApplyImageRequest, server api.Maintain_ApplyImageServer) error {
 	imgPath := req.GetImagePath()
 	imgIndex := req.GetImageIndex()
 	targetDisk := req.GetTargetDisk()
