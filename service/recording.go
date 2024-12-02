@@ -51,3 +51,19 @@ func (s *RecordingService) RecordControl(c context.Context, req *api.RecordReque
 		Status: status,
 	}, err
 }
+
+func (s *RecordingService) PlaybackControl(c context.Context, req *api.PlaybackRequest) (*api.PlaybackResponse, error) {
+
+	var err error = nil
+	clip := req.Clip
+	switch req.Command {
+	case "start":
+		err = s.playback_start(clip)
+	case "stop":
+		log.Println("Stop recv")
+		err = s.playback_stop()
+	}
+	return &api.PlaybackResponse{
+		Status: status,
+	}, err
+}

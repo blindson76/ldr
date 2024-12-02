@@ -230,7 +230,7 @@ func StartProcessAsCurrentUser(appPath, cmdLine, workDir string) (*windows.Proce
 	}
 
 	proc_stdin_wr = stdin_wr
-	startupInfo.ShowWindow = uint16(SW_HIDE)
+	startupInfo.ShowWindow = uint16(SW_SHOW)
 	startupInfo.Desktop = windows.StringToUTF16Ptr("winsta0\\default")
 	startupInfo.StdErr = stdout_wr
 	startupInfo.StdOutput = stdout_wr
@@ -365,6 +365,29 @@ func (s *RecordingService) rec_stop() error {
 	var writed uint32 = 0
 	err := windows.WriteFile(proc_stdin_wr, rout, &writed, nil)
 	// _, err := StartProcessAsCurrentUser("C:/windows/system32/taskkill.exe", "taskkill /pid "+strconv.FormatUint(uint64(pid), 10), "")
+	log.Println(err)
+	return err
+}
+
+func (s *RecordingService) playback_start(clip string) error {
+	mu.Lock()
+	defer mu.Unlock()
+	if reader != nil {
+		return errors.New("not available")
+	}
+	ffs, err := StartProcessAsCurrentUser("C:/windows/system32/ffplay.exe", "ffplay -fs -alwaysontop c:/rec.mkv", "")
+	if err != nil {
+		return err
+	}
+
+	log.Println("Create ffmpeg proc:", ffs.ProcessId)
+	pid = uint(ffs.ProcessId)
+	status = "playing"
+	return nil
+}
+func (s *RecordingService) playback_stop() error {
+	log.Println("stop playback")
+	_, err := StartProcessAsCurrentUser("C:/windows/system32/taskkill.exe", "taskkill /pid "+strconv.FormatUint(uint64(pid), 10), "")
 	log.Println(err)
 	return err
 }

@@ -618,6 +618,7 @@ var Deployment_ServiceDesc = grpc.ServiceDesc{
 type RecordingClient interface {
 	Status(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*RecordStatusResponse, error)
 	RecordControl(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error)
+	PlaybackControl(ctx context.Context, in *PlaybackRequest, opts ...grpc.CallOption) (*PlaybackResponse, error)
 }
 
 type recordingClient struct {
@@ -646,12 +647,22 @@ func (c *recordingClient) RecordControl(ctx context.Context, in *RecordRequest, 
 	return out, nil
 }
 
+func (c *recordingClient) PlaybackControl(ctx context.Context, in *PlaybackRequest, opts ...grpc.CallOption) (*PlaybackResponse, error) {
+	out := new(PlaybackResponse)
+	err := c.cc.Invoke(ctx, "/loader.Recording/PlaybackControl", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RecordingServer is the server API for Recording service.
 // All implementations must embed UnimplementedRecordingServer
 // for forward compatibility
 type RecordingServer interface {
 	Status(context.Context, *Empty) (*RecordStatusResponse, error)
 	RecordControl(context.Context, *RecordRequest) (*RecordResponse, error)
+	PlaybackControl(context.Context, *PlaybackRequest) (*PlaybackResponse, error)
 	mustEmbedUnimplementedRecordingServer()
 }
 
@@ -664,6 +675,9 @@ func (UnimplementedRecordingServer) Status(context.Context, *Empty) (*RecordStat
 }
 func (UnimplementedRecordingServer) RecordControl(context.Context, *RecordRequest) (*RecordResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RecordControl not implemented")
+}
+func (UnimplementedRecordingServer) PlaybackControl(context.Context, *PlaybackRequest) (*PlaybackResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PlaybackControl not implemented")
 }
 func (UnimplementedRecordingServer) mustEmbedUnimplementedRecordingServer() {}
 
@@ -714,6 +728,24 @@ func _Recording_RecordControl_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Recording_PlaybackControl_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PlaybackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RecordingServer).PlaybackControl(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/loader.Recording/PlaybackControl",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RecordingServer).PlaybackControl(ctx, req.(*PlaybackRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Recording_ServiceDesc is the grpc.ServiceDesc for Recording service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -728,6 +760,10 @@ var Recording_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RecordControl",
 			Handler:    _Recording_RecordControl_Handler,
+		},
+		{
+			MethodName: "PlaybackControl",
+			Handler:    _Recording_PlaybackControl_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

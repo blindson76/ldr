@@ -89,6 +89,13 @@ message RecordResponse {
     string status = 1;
 }
 
+message PlaybackRequest{
+    string command  =1;
+    string clip = 2;
+}
+message PlaybackResponse{
+    string status = 1;
+}
 message PartitionInfo {
     uint64 size = 1;
     string type = 2;
@@ -152,4 +159,5 @@ service Deployment{
 service Recording{
     rpc Status(Empty) returns (RecordStatusResponse){}
     rpc RecordControl(RecordRequest) returns (RecordResponse){}
+    rpc PlaybackControl(PlaybackRequest) returns (PlaybackResponse){}
 }
