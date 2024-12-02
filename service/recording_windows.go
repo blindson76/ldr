@@ -169,7 +169,7 @@ func DuplicateUserTokenFromSessionID(sessionId windows.Handle) (windows.Token, e
 	return userToken, nil
 }
 
-func StartProcessAsCurrentUser(appPath, cmdLine, workDir string) (*windows.ProcessInformation, error) {
+func StartProcessAsCurrentUser(appPath, cmdLine, workDir string, showWindow bool) (*windows.ProcessInformation, error) {
 	var (
 		sessionId windows.Handle
 		userToken windows.Token
@@ -228,9 +228,12 @@ func StartProcessAsCurrentUser(appPath, cmdLine, workDir string) (*windows.Proce
 	if err != nil {
 		return nil, err
 	}
-
+	showWin := SW_SHOW
+	if !showWindow {
+		showWin = int(SW_HIDE)
+	}
 	proc_stdin_wr = stdin_wr
-	startupInfo.ShowWindow = uint16(SW_SHOW)
+	startupInfo.ShowWindow = uint16(showWin)
 	startupInfo.Desktop = windows.StringToUTF16Ptr("winsta0\\default")
 	startupInfo.StdErr = stdout_wr
 	startupInfo.StdOutput = stdout_wr
@@ -306,7 +309,7 @@ func (s *RecordingService) rec_start() error {
 	// 	WithErrorOutput(eo).
 	// 	WithInput(r).
 	// 	OverWriteOutput()
-	ffs, err := StartProcessAsCurrentUser("C:/windows/system32/ffmpeg.exe", "ffmpeg -f gdigrab -framerate 30 -i desktop c:/rec.mkv -progress tcp://"+listen.Addr().String()+" -y", "")
+	ffs, err := StartProcessAsCurrentUser("C:/windows/system32/ffmpeg.exe", "ffmpeg -f gdigrab -framerate 30 -i desktop c:/rec.mkv -progress tcp://"+listen.Addr().String()+" -y", "", false)
 	if err != nil {
 		return err
 	}
@@ -375,7 +378,7 @@ func (s *RecordingService) playback_start(clip string) error {
 	if reader != nil {
 		return errors.New("not available")
 	}
-	ffs, err := StartProcessAsCurrentUser("C:/windows/system32/ffplay.exe", "ffplay -fs -alwaysontop c:/rec.mkv", "")
+	ffs, err := StartProcessAsCurrentUser("C:/windows/system32/ffplay.exe", "ffplay -fs -alwaysontop c:/rec.mkv", "", true)
 	if err != nil {
 		return err
 	}
@@ -387,7 +390,7 @@ func (s *RecordingService) playback_start(clip string) error {
 }
 func (s *RecordingService) playback_stop() error {
 	log.Println("stop playback")
-	_, err := StartProcessAsCurrentUser("C:/windows/system32/taskkill.exe", "taskkill /pid "+strconv.FormatUint(uint64(pid), 10), "")
+	_, err := StartProcessAsCurrentUser("C:/windows/system32/taskkill.exe", "taskkill /pid "+strconv.FormatUint(uint64(pid), 10), "", false)
 	log.Println(err)
 	return err
 }
