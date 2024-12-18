@@ -53,8 +53,9 @@ message ChunkData {
 
 message MetaData {
     uint32 size = 1;
-    optional string name = 2;
-    optional string destination = 3;
+    bool isDirectory = 2;
+    optional string name = 3;
+    optional string destination = 4;
 }
 
 message UploadRequest{

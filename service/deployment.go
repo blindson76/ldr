@@ -5,11 +5,10 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"errors"
-	"io"
 	"log"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
@@ -85,19 +84,31 @@ func (s *DeploymentService) Upload(req api.Deployment_UploadServer) error {
 		}
 		switch u := request.Data.(type) {
 		case *api.UploadRequest_Info:
-			//log.Println("Info1:", u.Info)
+			log.Println("Info1:", u.Info)
 			total = u.Info.GetSize()
 			fname = u.Info.GetName()
 			destination = u.Info.GetDestination()
-			dstPath := path.Join("c:/application", destination)
-			if _, err := os.Stat(dstPath); os.IsNotExist(err) {
-				if err = os.MkdirAll(dstPath, 0700); err != nil {
+			isDirectory := u.Info.GetIsDirectory()
+			destinationFile := filepath.Join(destination, fname)
+			destinationPath := filepath.Dir(destinationFile)
+			log.Println("destinationFile", destinationFile)
+			log.Println("destinationPath", destinationPath)
+			log.Println("isDirectory", isDirectory)
+			if isDirectory {
+				if err = os.MkdirAll(destinationFile, 0700); err != nil {
+					return err
+				}
+				return nil
+			}
+			if _, err := os.Stat(destinationPath); os.IsNotExist(err) {
+				log.Println("creating directory", destinationPath)
+				if err = os.MkdirAll(destinationPath, 0700); err != nil {
 					return err
 				}
 			}
-			f, err := os.OpenFile(path.Join(dstPath, fname), os.O_RDWR|os.O_CREATE, 0644)
+			f, err := os.OpenFile(destinationFile, os.O_RDWR|os.O_CREATE, 0644)
 			if err != nil {
-				log.Println("Open error", err.Error())
+				log.Println("Open errorr", err.Error())
 				return err
 			}
 			//log.Println("File123::", fname, f)
@@ -133,14 +144,19 @@ func (s *DeploymentService) Upload(req api.Deployment_UploadServer) error {
 		case *api.UploadRequest_Chunk:
 			// log.Println("Chunk", u.Chunk.Seq)
 			n, err := file.Write(u.Chunk.Data)
-			if err != nil {
+			if err != nil || n != len(u.Chunk.Data) {
 				log.Println("Write error", err.Error())
 				return err
+			}
+			n, err = hash.Write(u.Chunk.Data)
+			if err != nil || n != len(u.Chunk.Data) {
+				log.Println("hash write error", n, err)
+				return errors.New("hashing error")
 			}
 			received += uint32(n)
 			// log.Println("Write bytes", n)
 			if received == total {
-				//log.Println("Done!1")
+				log.Println("Done!")
 				stop <- 0
 				mu.Unlock()
 			}
@@ -148,19 +164,7 @@ func (s *DeploymentService) Upload(req api.Deployment_UploadServer) error {
 			//log.Println("hash req")
 			mu.Lock()
 			defer mu.Unlock()
-			//log.Println("Finish", u.Hash)
-			ret, err := file.Seek(0, 0)
-			if err != nil || ret != 0 {
-				return errors.New("seek error:" + err.Error())
-			}
-			n, err := io.Copy(hash, file)
-			if err != nil {
-				return errors.New("copy error:" + err.Error())
-			}
-			if n != int64(total) {
-				log.Println("hash error", n, total)
-				return errors.New("hashing error")
-			}
+			log.Println("Finish", u.Hash)
 			sum := hex.EncodeToString(hash.Sum(nil))
 			if sum != u.Hash {
 				log.Println("HASH Error", u.Hash, sum)
